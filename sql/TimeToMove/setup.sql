@@ -1,0 +1,4 @@
+-- CREATE DATABASE eshop;
+CREATE DATABASE IF NOT EXISTS TimeToMove;
+
+USE TimeToMove;

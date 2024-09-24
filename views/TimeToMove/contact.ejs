@@ -1,0 +1,120 @@
+<%- include('./../partials/header.ejs') %>
+
+<div class="content-container">
+    <h1>Contact Us</h1>
+    <p>If you have any questions or inquiries, feel free to reach out to us using the form below:</p>
+
+    <form id="contactForm" action="/submit_contact" method="POST">
+        <div class="form-group">
+            <label for="name">Your Name:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Your Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+            <label for="message">Your Message:</label>
+            <textarea id="message" name="message" rows="5" required></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit">Send Message</button>
+    </form>
+</div>
+
+<%- include('./../partials/footer.ejs') %>
+
+<script>
+    // JavaScript to handle the form submission via AJAX
+    document.getElementById('contactForm').addEventListener('submit', async function (e) {
+        e.preventDefault(); // Prevent the default form submission behavior
+
+        const form = e.target;
+
+        // Gather form data
+        const formData = {
+            name: form.name.value,
+            email: form.email.value,
+            message: form.message.value
+        };
+
+        try {
+            // Send form data via fetch to the server
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                // Show success alert
+                alert('Thank you for contacting us! We will get back to you shortly.');
+                // Redirect to leaderboard page after the user confirms
+                window.location.href = '/leaderboard';
+            } else {
+                // Handle errors
+                alert('There was an error sending your message. Please try again later.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('There was an issue processing your request. Please try again later.');
+        }
+    });
+</script>
+
+<style>
+/* Content Container Styling */
+.content-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+.content-container h1, .content-container h2 {
+    color: #333;
+}
+
+.content-container p {
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.514);
+}
+
+/* Contact form styling */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.btn-submit {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-submit:hover {
+    background-color: #0056b3;
+}
+    </style>
+    

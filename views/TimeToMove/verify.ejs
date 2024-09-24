@@ -1,0 +1,111 @@
+<%- include('./../partials/header.ejs') %>
+
+<div class="verify-container">
+    <h1>Verify Your Email</h1>
+    <p>Please enter the verification token you received via email to complete your registration.</p>
+
+    <form id="verifyForm" action="/verify" method="POST" class="verify-form">
+        <div class="form-group">
+            <label for="token">Enter Verification Token:</label>
+            <input type="text" id="token" name="token" required maxlength="9" pattern="\d{9}" placeholder="9-digit Token" value="<%= typeof token !== 'undefined' ? token : '' %>">
+            <small class="error-message">Token must be 9 digits long.</small>
+        </div>
+
+        <button type="submit" class="btn-submit">Verify</button>
+    </form>
+</div>
+
+<script>
+// Auto-fill the token from the query string if it's provided
+const urlParams = new URLSearchParams(window.location.search);
+const token = urlParams.get('token');
+if (token) {
+    document.getElementById('token').value = token;
+}
+
+// Handle form submission with AJAX
+document.getElementById('verifyForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    const token = document.getElementById('token').value;
+
+    try {
+        const response = await fetch('/verify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token })
+        });
+
+        const result = await response.json();
+
+        // Show popup based on the result
+        if (result.success) {
+            alert(`${result.message}`); // Display success message
+            window.location.href = '/login'; // Redirect to login page on success
+        } else {
+            alert(`${result.message}`);
+            window.location.href = '/create_user'; // Redirect to register page on failure
+        }
+
+    } catch (error) {
+        console.error('Error during verification:', error);
+        alert('Something went wrong. Please try again.');
+    }
+});
+</script>
+
+<%- include('./../partials/footer.ejs') %>
+
+<style>
+/* CSS for the verification page */
+.verify-container {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.verify-container h1 {
+    text-align: center;
+    color: #007bff;
+}
+
+.verify-form .form-group {
+    margin-bottom: 15px;
+}
+
+.verify-form input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+.verify-form .error-message {
+    color: red;
+    display: none;
+}
+
+.btn-submit {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+.btn-submit:hover {
+    background-color: #218838;
+}
+</style>

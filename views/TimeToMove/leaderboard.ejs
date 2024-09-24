@@ -1,0 +1,335 @@
+<%- include('./../partials/header.ejs') %>
+
+<h1>Leaderboard</h1>
+
+<!-- Button to show the stats -->
+<button id="view-stats-button" class="btn-stats"><strong>View Total Project Stats</strong></button>
+
+<!-- Leaderboard stats, hidden by default -->
+<div id="leaderboard-stats" class="leaderboard-stats" style="display: none;">
+    <p><strong>Total Users:</strong> <%= totalUsers %></p>
+    <p><strong>Total Files Uploaded:</strong> <%= totalFilesUploaded %></p>
+
+    <p><strong>Total Media Size:</strong> 
+    <% if (totalMediaSize > 1024 * 1024 * 1024) { %>
+        <%= (totalMediaSize / (1024 * 1024 * 1024)).toFixed(2) %> GB
+    <% } else { %>
+        <%= (totalMediaSize / (1024 * 1024)).toFixed(2) %> MB
+    <% } %>
+    <i> /53GB</i>
+    </p>
+    <p>- - - - - - - - - -</p>
+    <p><strong>Average Files per User:</strong><%= (totalFilesUploaded / totalUsers).toFixed(2) %></p>
+    <p><strong>Average Media Size per User:</strong> <%= ((totalMediaSize / (1024 * 1024)).toFixed(2) / totalUsers).toFixed(2) %></p>
+    <p><strong>Average Files per MB:</strong> <%= (totalFilesUploaded / (totalMediaSize / (1024 * 1024))).toFixed(2) %></p>
+</div>
+
+
+<table id="leaderboard-table">
+    <thead>
+        <tr>
+            <th onclick="sortTable(0)">Files per MB  <strong>↑ ↓</strong></th>
+            <th onclick="sortTable(1)">User  <strong>↑ ↓</strong></th> <!-- Combined column for User -->
+            <th onclick="sortTable(2)">Total Files Uploaded  <strong>↑ ↓</strong></th>
+            <th onclick="sortTable(3)">Total Media Size (MB)  <strong>↑ ↓</strong></th>
+        </tr>
+    </thead>
+    <tbody>
+        <% if (Array.isArray(leaderboard) && leaderboard.length > 0) { %>
+            <% leaderboard.forEach(function(player) { %>
+                <tr>
+                    <td><%= player.FilesPerMB ? player.FilesPerMB.toFixed(2) : 'N/A' %></td>
+                    
+                    <!-- Combined User column -->
+                    <td class="user-cell">
+                        <a href="/<%= player.Username %>" class="user-link">
+                            <img 
+                                src="/uploads/profiles/<%= player.UserPFP ? player.UserPFP : 'user-circle.svg' %>" 
+                                alt="<%= player.Username %>'s Profile Picture" 
+                                class="profile-picture"
+                                onerror="this.onerror=null; this.src='/uploads/profiles/user-circle.svg';"
+                            >
+                            <span class="username"><%= player.Username %></span>
+                        </a>
+                    </td>
+                    
+                    <td><%= player.TotalFilesUploaded %></td>
+                    <td><%= (player.TotalMediaSize / (1024 * 1024)).toFixed(2) %> MB</td>
+                </tr>
+            <% }); %>
+        <% } else { %>
+            <tr>
+                <td colspan="4">No data available</td>
+            </tr>
+        <% } %>
+    </tbody>
+</table>
+
+<%- include('./../partials/footer.ejs') %>
+
+
+
+
+<script>
+    // JavaScript to toggle the display of the stats
+    document.getElementById("view-stats-button").addEventListener("click", function() {
+        const stats = document.getElementById("leaderboard-stats");
+        if (stats.style.display === "none") {
+            stats.style.display = "block";  // Show the stats
+            this.innerText = "Hide Total Project Stats";  // Change button text
+        } else {
+            stats.style.display = "none";  // Hide the stats
+            this.innerText = "View Total Project Stats";  // Reset button text
+        }
+    });
+
+    function sortTable(n) {
+    const table = document.getElementById("leaderboard-table");
+    let switching = true;
+    let shouldSwitch, i, x, y, xContent, yContent;
+    let dir = "asc"; 
+    let switchCount = 0;
+
+    while (switching) {
+        switching = false;
+        const rows = table.rows;
+
+        for (i = 1; i < rows.length - 1; i++) {
+            shouldSwitch = false;
+            x = rows[i].getElementsByTagName("TD")[n];
+            y = rows[i + 1].getElementsByTagName("TD")[n];
+
+            xContent = cleanContent(x.innerHTML);
+            yContent = cleanContent(y.innerHTML);
+
+            if (dir === "asc") {
+                if (xContent < yContent) {
+                    shouldSwitch = true;
+                    break;
+                }
+            } else if (dir === "desc") {
+                if (xContent > yContent) { // yeah I switched them dont worry about it.
+                    shouldSwitch = true;
+                    break;
+                }
+            }
+        }
+
+        if (shouldSwitch) {
+            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+            switching = true;
+            switchCount++;
+        } else {
+            if (switchCount === 0 && dir === "asc") {
+                dir = "desc";
+                switching = true;
+            }
+        }
+    }
+}
+
+/**
+ * Helper function to clean the content for sorting.
+ * It handles "N/A" values, and converts values with units like "MB" or "GB" to numerical values.
+ */
+function cleanContent(content) {
+    // Convert to lowercase for case-insensitive comparisons
+    content = content.toLowerCase().trim();
+
+    // Special case for N/A values
+    if (content === "n/a") {
+        return -Infinity; // Treat "N/A" as the smallest value
+    }
+
+    // Check if content has a unit like "MB" or "GB"
+    const numberWithUnit = content.match(/([\d\.]+)\s*(mb|gb)/);
+    if (numberWithUnit) {
+        let value = parseFloat(numberWithUnit[1]);
+        const unit = numberWithUnit[2];
+
+        // Convert GB to MB for consistent comparison
+        if (unit === "gb") {
+            value *= 1024; // 1 GB = 1024 MB
+        }
+
+        return value;
+    }
+
+    // If it's a plain number, parse it
+    const parsed = parseFloat(content);
+    if (!isNaN(parsed)) {
+        return parsed;
+    }
+
+    // Otherwise, return as a string for comparison
+    return content;
+}
+
+</script>
+
+<style>
+/* Leaderboard title */
+.leaderboard-title {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 32px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+/* Container for the leaderboard to add space around the table */
+.leaderboard-container {
+    max-width: 90%; /* Adjusts to screen width, keeps 10% margin */
+    margin: 0 auto; /* Centers the container */
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Table styling */
+#leaderboard-table {
+    margin-left: 5%;
+    width: 90%;
+    border-collapse: collapse; /* Remove default table borders */
+    margin-top: 20px;
+    margin-bottom: 50px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for the table */
+}
+
+#leaderboard-table th, #leaderboard-table td {
+    padding: 12px 15px;
+    text-align: center;
+    border-bottom: 1px solid #ddd; /* Subtle row borders */
+}
+
+#leaderboard-table th {
+    background: linear-gradient(to right, #4b90ff, #17b5ff); /* Light pastel gradient */
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
+#leaderboard-table th:nth-child(2n) {
+    background: linear-gradient(to left, #4b90ff, #17b5ff); /* Light pastel gradient */
+}
+ 
+
+#leaderboard-table th:hover {
+    background-color: #0056b3; /* Darken header on hover */
+}
+
+#leaderboard-table tbody tr:hover {
+    background-color: #9edbff; /* Light blue hover effect for rows */
+}
+
+/* Ensure profile pictures are displayed at a consistent small size */
+.profile-picture {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Style for the clickable username link */
+.user-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #007bff;
+}
+
+.user-link:hover {
+    text-decoration: underline;
+}
+
+.username {
+    margin-left: 10px;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* Over-the-top Button for viewing/hiding project stats */
+.btn-stats {
+    display: block;
+    margin: 20px auto;
+    padding: 15px 40px;
+    background: linear-gradient(45deg, #ff0066, #ffcc00, #33ccff, #ff66ff);
+    background-size: 300% 300%;
+    color: white;
+    border-radius: 50px;
+    border: 3px solid #fff;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2), 0 0 15px rgba(255, 0, 150, 0.5), 0 0 25px rgba(255, 204, 0, 0.5), 0 0 50px rgba(51, 204, 255, 0.5);
+    transition: all 0.5s ease-in-out;
+    animation: glowing 3s infinite ease-in-out, backgroundShift 5s infinite linear;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.btn-stats:hover {
+    background-position: 100% 100%;
+    transform: scale(1.2) rotate(10deg);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 0, 150, 0.6), 0 0 40px rgba(255, 204, 0, 0.6), 0 0 70px rgba(51, 204, 255, 0.6);
+}
+
+/* Glowing neon-like animation */
+@keyframes glowing {
+    0% {
+        box-shadow: 0 0 10px rgba(255, 0, 150, 0.5), 0 0 20px rgba(255, 204, 0, 0.5), 0 0 30px rgba(51, 204, 255, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 0, 150, 0.8), 0 0 40px rgba(255, 204, 0, 0.8), 0 0 60px rgba(51, 204, 255, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 10px rgba(255, 0, 150, 0.5), 0 0 20px rgba(255, 204, 0, 0.5), 0 0 30px rgba(51, 204, 255, 0.5);
+    }
+}
+
+/* Shift background color for a dynamic effect */
+@keyframes backgroundShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Styling for the stats section */
+.leaderboard-stats {
+    background-color: rgba(255, 255, 255, 0.8); /* Light semi-transparent background */
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 30%; /* Restrict the width */
+    margin: 15px auto; /* Center the container */
+}
+
+/* Cool rainbow text effect with cycling colors */
+.leaderboard-stats p {
+    margin: 8px 0;
+    font-size: 16px;
+    font-weight: bold;
+    background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: rainbow-text 5s ease infinite, color-cycle 5s ease infinite;
+    background-size: 300%;
+}
+
+/* Keyframes for background gradient animation */
+@keyframes rainbow-text {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+</style>

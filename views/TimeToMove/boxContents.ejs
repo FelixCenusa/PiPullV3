@@ -1,0 +1,241 @@
+<%- include('./../partials/header.ejs') %>
+
+<!-- if the errorMessage is not null, display an error box -->
+<% if (typeof errorMessage !== 'undefined' && errorMessage !== "") { %>
+    <div class="error-box">
+        <h1><%= errorMessage %></h1>
+        <a href="/<%= user.Username %>" class="back-button">Back to Profile</a>
+    </div>
+<% } %>
+
+<!-- if the box object is not null, display the box contents -->
+<% if (box) { %>
+    <%= console.log("box") %>
+    <%= console.log(box) %>
+    <%= console.log("box.TitleChosen") %>
+    <%= console.log(box[0].TitleChosen) %>
+    <h1>Box: <%= box[0].TitleChosen %></h1>
+    <h2>Owner: <%= user.Username %></h2>
+    <h3>Is Public: <%= box[0].IsBoxPublic ? 'Yes' : 'No' %></h3>
+    <%                 
+    console.log("box[0]", box[0])
+    console.log("HERASDASbox", box)
+    console.log("user.username", user.Username)
+    console.log("box.TitleChosen", box.TitleChosen)
+    console.log("box[0].TitleChosen", box[0].TitleChosen)
+    console.log("box[0].BoxID", box[0].BoxID)
+    console.log("box.BoxID", box.BoxID)
+
+
+    %>
+
+    <!-- Check if the box is private and the logged-in user is not the owner -->
+    <% if (!box[0].IsBoxPublic && (!session.user || session.user.username !== user.Username)) { %>
+        <!-- Display message if the box is private and the user is not the owner -->
+        <div class="error-box">
+            <h2>Box contents are private</h2>
+            <a href="/<%= user.Username %>" class="back-button">Back to Profile</a>
+        </div>
+    <% } else { %>
+        <!-- Box is public or the logged-in user is the owner, display the box contents -->
+
+        <!-- Download All Files Button -->
+        <button id="download-all-button" onclick="downloadAllFiles()">
+            <% 
+                var totalSizeMB = totalSize / (1024 * 1024);
+                var totalSizeKB = totalSize / 1024;
+            %>
+            <span class="button-content">
+                Download All Files <%= totalSizeMB > 1 ? totalSizeMB.toFixed(2) + ' MB' : totalSizeKB.toFixed(2) + ' KB' %>
+            </span>
+        </button>
+
+        <!-- Display file upload menu only if the logged-in user is the owner of the box -->
+        <% if (session.user && session.user.username === user.Username) { %>
+            <!-- File upload menu -->
+            <div id="upload-menu" class="upload-menu" onclick="this.classList.toggle('open')">
+                <div class="upload-button" id="upload-button-1" onclick="document.getElementById('uploadImage').click()"></div>
+                <div class="upload-button" id="upload-button-2" onclick="document.getElementById('uploadText').click()"></div>
+                <div class="upload-button" id="upload-button-3" onclick="document.getElementById('uploadAudio').click()"></div>
+            </div>
+
+            <!-- Hidden file inputs -->
+            <form id="uploadForm" method="POST" action="/<%= user.Username %>/<%= box[0].BoxID %>/upload" enctype="multipart/form-data">
+                <input type="file" id="uploadImage" name="imageFile" accept="image/*" style="display:none;" onchange="uploadFile('image')">
+                <input type="file" id="uploadText" name="textFile" accept=".txt" style="display:none;" onchange="uploadFile('text')">
+                <input type="file" id="uploadAudio" name="audioFile" accept="audio/*" style="display:none;" onchange="uploadFile('audio')">
+            </form>
+        <% } %>
+
+        <!-- Button to go back to the user's profile page -->
+        <div>
+            <a href="/<%= user.Username %>" class="back-button">Back to Profile</a>
+        </div>
+
+        <h2>Contents of the Box</h2>
+
+        <!-- Grid container for box contents -->
+        <div class="box-container">
+            <% if (Array.isArray(contents) && contents.length > 0) { %>
+                <% contents.forEach(function(content) { %>
+                    <div class="box-card">
+                        <% if (['png', 'jpg', 'jpeg', 'gif'].includes(content.MediaType)) { %>
+                            <!-- Display Image or GIF -->
+                            <img src="/uploads/<%= content.MediaPath %>" alt="Image or GIF" style="max-width: 100%; height: auto; border-radius: 8px;">
+                            <% var pathArray = content.MediaPath.includes('\\') ? content.MediaPath.split('\\') : content.MediaPath.split('/'); %>
+                            <% var fileName = pathArray[pathArray.length - 1]; %>
+                            <p><strong>File Name:</strong> <%= fileName %></p>
+                        <% } else if (content.MediaType === 'txt') { %>
+                            <!-- Display Text File Name and Contents -->
+                            <div class="text-file-box" style="background-color: #f1f1f1; border: 1px solid #ccc; padding: 10px; border-radius: 6px; max-height: 200px; overflow-y: auto;">
+                                <% var pathArray = content.MediaPath.split('/'); %>
+                                <% var fileName = pathArray[pathArray.length - 1]; %>
+                                <h4 style="margin-bottom: 8px;">File: <%= fileName %></h4>
+                                <pre style="white-space: pre-wrap; word-wrap: break-word;"><%= content.textContent %></pre>
+                            </div>
+                        <% } else if (['mp3', 'wav'].includes(content.MediaType)) { %>
+                            <!-- Display Audio Player with File Name -->
+                            <div class="audio-player-box" style="background-color: #fafafa; padding: 10px; border-radius: 6px;">
+                                <% var pathArray = content.MediaPath.split('\\'); %>
+                                <% var fileName = pathArray[pathArray.length - 1]; %>
+                                <h4>Audio File: <%= fileName %></h4>
+                                <audio controls style="width: 100%; height: 30px;">
+                                    <source src="/uploads/<%= content.MediaPath %>" type="audio/<%= content.MediaType %>">
+                                    Your browser does not support the audio element.
+                                </audio>
+                            </div>
+                        <% } else if (['mp4', 'webm', 'ogg'].includes(content.MediaType)) { %>
+                            <div class="video-player-box">
+                            <video controls class="small-video">
+                                <source src="/uploads/<%= content.MediaPath %>" type="video/<%= content.MediaType %>">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <% } else { %>
+                            <!-- Display Download Link for Other File Types and say "Download mediaName"-->
+                            <p><a href="/uploads/<%= content.MediaPath %>" download>Download file <%= fileName %> of type <%= content.MediaType %></a></p>
+                        <% } %>
+
+                        <!-- Add the download button for each file -->
+                        <a href="/uploads/<%= content.MediaPath %>" download="<%= fileName %>">
+                            <button class="Btn">
+                                <svg class="svgIcon" viewBox="0 0 384 512" height="1em" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M169.4 470.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 370.8 224 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 306.7L54.6 265.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z"></path>
+                                </svg>
+                                <span class="icon2"></span>
+                                <% 
+                                    var fileSizeMB = content.MediaSize / (1024 * 1024);
+                                    var fileSizeKB = content.MediaSize / 1024;
+                                %>
+                                <span class="tooltip"><%= fileSizeMB > 1 ? fileSizeMB.toFixed(2) + ' MB' : fileSizeKB.toFixed(2) + ' KB' %></span>
+                            </button>
+                        </a>
+
+                        <!-- Delete button for each file (visible only for the box owner) -->
+                        <% if (session.user && session.user.username === user.Username) { %>
+                            <form action="/<%= user.Username %>/<%= box[0].BoxID %>/<%= content.MediaID %>/delete" method="POST" style="display:inline;">
+                                <button type="submit" class="delete-btn">
+                                    <svg class="svgIcon" viewBox="0 0 384 512" height="1em" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M32 96h320v32H32zm32 64h256v320H64zm80-48h96v16h-96zm-16 0h-16V80h16zm128 0h16v16h-16z"></path>
+                                    </svg>
+                                    Delete
+                                </button>
+                            </form>
+                        <% } %>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <p>This box has no contents yet.</p>
+            <% } %>
+        </div>
+
+        <%- include('./../partials/footer.ejs') %>
+
+        <script>
+            function uploadFile(fileType) {
+                const form = document.getElementById('uploadForm');
+                form.submit();
+                alert(`${fileType} file uploaded!`);
+            }
+
+            function downloadAllFiles() {
+
+                const username = "<%= user.Username %>";
+                const boxID = "<%= box[0].BoxID %>";
+                window.location.href = `/${username}/${boxID}/downloadAll`;
+            }
+        </script>
+    <% } %>
+<% } %>
+
+<style>
+
+    /* Box Card Styling */
+.box-card {
+    background-color: white; /* Fallback */
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+/* Cycle through 5 different pastel backgrounds for box-cards */
+.box-card:nth-child(5n+1) {
+    background: linear-gradient(to right, #ff9a9e, #fecfef); /* Light pink gradient */
+}
+
+.box-card:nth-child(5n+2) {
+    background: linear-gradient(to right, #a1c4fd, #c2e9fb); /* Blue gradient */
+}
+
+.box-card:nth-child(5n+3) {
+    background: linear-gradient(to right, #fbc2eb, #a6c1ee); /* Pink to blue gradient */
+}
+
+.box-card:nth-child(5n+4) {
+    background: linear-gradient(to right, #ffecd2, #fcb69f); /* Orange gradient */
+}
+
+.box-card:nth-child(5n+5) {
+    background: linear-gradient(to right, #cfd9df, #e2ebf0); /* Gray to blue gradient */
+}
+
+/* Hover effect */
+.box-card:hover {
+    transform: scale(1.05);
+    background-color: #f1f1f1;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+}
+
+.btn-container button:hover {
+    opacity: 0.9;
+}
+/* Video player container styling */
+.video-player-box {
+    max-width: 100%; /* Ensure the video fits within the card */
+    text-align: center;
+}
+
+/* Small video size */
+.small-video {
+    width: 250px; /* Set the initial small width */
+    height: auto; /* Keep aspect ratio */
+    max-width: 100%; /* Make sure the video doesn't overflow the container */
+}
+
+/* Make the video player responsive */
+.small-video:fullscreen {
+    width: 100%; /* Fullscreen width */
+    height: 100%; /* Fullscreen height */
+}
+
+
+</style>

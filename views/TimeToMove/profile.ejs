@@ -1,0 +1,1416 @@
+<%- include('./../partials/header.ejs') %>
+
+<div class="profile-container">
+    <!-- Profile and Greeting Section -->
+<div class="profile-box-card">
+    <div class="profile-picture-container">
+        <% if (user.UserPFP) { %>
+            <div class="profile-picture-wrapper">
+                <img src="/uploads/profiles/<%= user.UserPFP %>" 
+                     alt="<%= user.Username %>'s Profile Picture" 
+                     class="profile-picture"
+                     <% if (session.user && session.user.username === user.Username) { %>
+                        onclick="triggerProfilePicUpload()"
+                     <% } %>
+                     onerror="this.onerror=null; this.src='/uploads/profiles/user-circle.svg';">
+                
+                <!-- Hover options: Upload and Delete -->
+                <% if (session.user && session.user.username === user.Username) { %>
+                    <div class="profile-picture-options">
+                        <button class="edit-profile-pic-btn" onclick="triggerProfilePicUpload()">Change</button>
+                        <button class="delete-profile-pic-btn" onclick="deleteProfilePicture()">Delete</button>
+                    </div>
+                <% } %>
+            </div>
+        <% } else { %>
+            <div class="profile-picture-wrapper">
+                <img src="/uploads/profiles/user-circle.svg" 
+                     alt="Default Profile Picture" 
+                     class="profile-picture"
+                     <% if (session.user && session.user.username === user.Username) { %>
+                        onclick="triggerProfilePicUpload()"
+                     <% } %>>
+                
+                <!-- Hover options: Upload (when no picture is set) -->
+                <% if (session.user && session.user.username === user.Username) { %>
+                    <div class="profile-picture-options">
+                        <button class="edit-profile-pic-btn" onclick="triggerProfilePicUpload()">Upload</button>
+                    </div>
+                <% } %>
+            </div>
+        <% } %>
+
+        <!-- Hidden form for uploading profile picture -->
+        <% if (session.user && session.user.username === user.Username) { %>
+            <form id="profilePicForm" action="/<%= user.Username %>/uploadProfilePic" method="POST" enctype="multipart/form-data" style="display: none;">
+                <input type="file" id="profilePicInput" name="profilePic" accept="image/*" onchange="submitProfilePicForm()">
+            </form>
+        <% } %>
+    </div>
+
+    <div class="profile-info">
+        <% if (session.user && session.user.username === user.Username) { %>
+        <h2>Welcome, <%= user.Username %>!</h2>
+        <p class="greeting">It's great to see you back. Check out your profile and manage your boxes below.</p>
+        <!-- Display the user's description -->
+        <div class="user-description" id="description-box" onclick="toggleEditDescription()">
+            <h3>About <%= user.Username %>:</h3>
+            <p id="description-text"><%= user.UserDescription ? user.UserDescription : 'This user has not added a description yet.' %></p>
+        </div>
+        <% } else { %>
+        <h2><%= user.Username %>'s Profile</h2>
+        <!-- Display the user's description -->
+        <div class="user-description">
+            <h3>About <%= user.Username %>:</h3>
+            <p><%= user.UserDescription ? user.UserDescription : 'This user has not added a description yet.' %></p>
+        </div>
+        <% } %>
+
+        <!-- Hidden form to edit the description -->
+        <div id="edit-description-form" style="display: none;">
+            <form action="/<%= user.Username %>/editDescription" method="POST">
+                <textarea name="UserDescription" id="UserDescription" rows="3" placeholder="Enter your description (max 4095 characters)" required maxlength="4095"><%= user.UserDescription || '' %></textarea>
+                <div id="charCountWrapper">
+                    <span id="charCount">0</span>/4095 characters
+                </div>
+                <button type="submit" class="btn-submit">Update Description</button>
+                <button type="button" class="btn-cancel" onclick="toggleEditDescription()">Cancel</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<% if (session.user && session.user.username === user.Username) { %>
+    <!-- Create Box Section -->
+<div class="create-box-card">
+    <h2 class="create-box-title">Create a New Box</h2>
+    <form action="/create_box" method="POST" class="create-box-form">
+        <div class="form-group">
+            <label for="label">Box Title:</label>
+            <input type="text" id="label" name="label" class="form-control" placeholder="Enter box title" required oninput="replaceSpaces(this)">
+        </div>
+        <div class="form-group">
+            <label for="isPublic">Box Visibility:</label>
+            <select id="isPublic" name="isPublic" class="form-control">
+                <option value="true">Public</option>
+                <option value="false">Private</option>
+            </select>
+        </div>
+        <input type="hidden" id="labelStyleUrl" name="labelStyleUrl">
+        <input type="hidden" id="borderImageSlice" name="borderImageSlice">
+        <input type="hidden" id="borderImageRepeat" name="borderImageRepeat">
+        <button type="button" class="btn-add-label-style" onclick="openLabelStyleModal()">Add Label Style</button>
+        <button type="submit" class="btn-submit">Create Box</button>
+    </form>
+</div>
+</div>
+
+<!-- Label Style Modal -->
+<div id="labelStyleModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeLabelStyleModal()">&times;</span>
+        <h2>Select Label Style</h2>
+        
+        <!-- Option to upload a new label style -->
+        <form id="uploadLabelStyleForm" action="/upload_label_style" method="POST" enctype="multipart/form-data" class="upload-label-style-form">
+            <label for="newLabelStyle" class="upload-label">Upload New Label Style:</label>
+            <input type="file" id="newLabelStyle" name="newLabelStyle" accept="image/*" class="file-input">
+            <button type="submit" class="btn-submit">Upload</button>
+            <p class="upload-note"><em>Any image/style uploaded will be available for all users to use.</em></p>
+        </form>
+
+        <!-- Display existing label styles -->
+        <h3><strong>Or choose from existing:</strong></h3>
+        <div class="label-styles-container">
+            <% if (labelStyles && labelStyles.length > 0) { %>
+                <% labelStyles.forEach(function(style) { %>
+                    <img src="/uploads/labelStyles/<%= style.filename %>" alt="Label Style" class="label-style-image" data-filename="<%= style.filename %>" onclick="selectLabelStyle('<%= style.filename %>', this)">
+                <% }); %>
+            <% } %>
+        </div>
+
+        <!-- Input for 'slice' value -->
+        <label for="borderImageSliceInput">Border Image Slice Value (e.g., 30):</label>
+        <input type="range" id="borderImageSliceInput" min="1" max="100" value="30" oninput="updateLabelStylePreview(); document.getElementById('sliceValueDisplay').innerText = this.value;">
+        
+        <!-- Display the current slider value -->
+        <span id="sliceValueDisplay">30</span>
+        
+        <!-- Select for 'repeat' value -->
+        <label for="borderImageRepeatSelect">Border Image Repeat:</label>
+        <select id="borderImageRepeatSelect" onchange="updateLabelStylePreview()">
+            <option value="repeat">Repeat</option>
+            <option value="round">Round</option>
+            <option value="stretch">Stretch</option>
+            <option value="space">Space</option>
+        </select>
+
+        <!-- Preview -->
+        <h3>Preview:</h3>
+        <div id="labelStylePreview" class="label-style-preview">
+            <p>Box Preview</p>
+        </div>
+
+        <button type="button" class="btn-apply" onclick="applyLabelStyle()">Apply Label Style</button>
+    </div>
+</div>
+<% } %>
+
+
+
+
+
+
+<!-- Say "username"'s boxes -->
+<!-- <h2><%= user.Username %>'s Boxes</h2> -->
+<!-- Add a form for sorting the boxes with unique ID -->
+<form id="sortFormUnique" method="GET" action="/<%= user.Username %>" class="sort-form-unique">
+    <label for="sortOrderUnique">Sort by:</label>
+    <select id="sortOrderUnique" name="sortOrder" onchange="document.getElementById('sortFormUnique').submit();">
+        <option value="recent" <%= (sortOrder === 'recent' ? 'selected' : '') %>>Most Recent</option>
+        <option value="mostContent" <%= (sortOrder === 'mostContent' ? 'selected' : '') %>>Most Content</option>
+    </select>
+</form>
+<div class="box-container">
+    <% if (Array.isArray(boxes) && boxes.length > 0) { %>
+        <% boxes.forEach(function(box) { %>
+            <div class="box-card" style="
+    <% if (box.LabelChosen) { %>
+        border: 10px solid transparent;
+        border-image-source: url('/uploads/labelStyles/<%= box.LabelChosen %>');
+        border-image-slice: <%= box.BorderImageSlice || 30 %>;
+        border-image-repeat: <%= box.BorderImageRepeat || 'repeat' %>;
+    <% } %>
+" id="box-<%= box.BoxID %>" onclick="window.location.href='/<%= user.Username %>/<%= box.TitleChosen %>'">
+
+  <!-- Box Title Container -->
+<div class="box-title-container">
+    <h3><%= box.TitleChosen %></h3>
+</div>
+  <!-- Hoverable Edit/Delete/Print buttons, visible only when hovered -->
+  <div class="btn-container">
+    <% if (session.user && session.user.username === user.Username) { %>
+      <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>', '<%= box.BoxDescription %>')">Edit</button>
+      <button class="delete-btn" onclick="event.stopPropagation(); openDeleteBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>')">Delete</button>
+    <% } %>
+    <button class="print-btn" onclick="event.stopPropagation(); printBox(<%= box.BoxID %>)">Print</button>
+  </div>
+
+  <!-- Box Description -->
+  <p><strong>Description:</strong> <%= box.BoxDescription ? box.BoxDescription : 'No description provided.' %></p>
+  
+  <!-- Box Visibility -->
+  <p><strong>Is Public:</strong> <%= box.IsBoxPublic ? 'Yes' : 'No' %></p>
+  
+  <!-- Number of Files -->
+  <p><strong>Number of Files:</strong> <%= box.NrOfFiles %></p>
+
+  <!-- Display QR code if the box is public -->
+  <% if (box.IsBoxPublic && box.qrCodeDataURL) { %>
+    <div class="qr-code-container">
+      <h4>Share this Box:</h4>
+      <img src="<%= box.qrCodeDataURL %>" alt="QR Code for <%= box.TitleChosen %>">
+    </div>
+  <% } %>
+</div>
+        <% }); %>
+    <% } else { %>
+        <p>No boxes found.</p>
+    <% } %>
+</div>
+
+
+
+<!-- Edit Box Modal -->
+<div id="editBoxModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditBoxModal()">&times;</span>
+        <h2>Edit Box</h2>
+        <form id="editBoxForm" method="POST" action="">
+            <label for="newBoxName">Box Name:</label>
+            <input type="text" id="newBoxName" name="newBoxName" placeholder="Enter new box name" required oninput="replaceSpaces(this)">
+
+            
+            <label for="newBoxDescription">Box Description:</label>
+            <textarea id="newBoxDescription" name="newBoxDescription" placeholder="Enter box description (max 4095 characters)" maxlength="4095"></textarea>
+            <div id="boxCharCountWrapper">
+                <span id="boxCharCount">0</span>/4095 characters
+            </div>
+            
+            <button type="submit">Update</button>
+        </form>
+    </div>
+</div>
+
+
+<!-- Delete Box Confirmation Modal -->
+<div id="deleteBoxModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeDeleteBoxModal()">&times;</span>
+        <h2>Confirm Deletion</h2>
+        <p>Are you sure you want to delete the box "<span id="boxToDeleteName"></span>" and all its contents?</p>
+        <form id="deleteBoxForm" method="POST" action="">
+            <button type="submit" class="btn-delete-confirm">Delete</button>
+        </form>
+    </div>
+</div>
+
+<%- include('./../partials/footer.ejs') %>
+
+<script>
+
+
+// Function to open the edit modal
+function openEditBoxModal(boxID, currentBoxName, currentBoxDescription) {
+    document.getElementById('newBoxName').value = currentBoxName;
+    document.getElementById('newBoxDescription').value = currentBoxDescription || ''; // Set to empty string if null
+    document.getElementById('editBoxForm').action = '/' + '<%= user.Username %>' + '/' + boxID + '/editBox';
+    document.getElementById('editBoxModal').style.display = 'block';
+
+    // Initialize character count
+    updateBoxCharCount();
+
+    // Add event listener for input on box description
+    const textarea = document.getElementById('newBoxDescription');
+    textarea.addEventListener('input', updateBoxCharCount);
+}
+
+// Function to update character count for box description
+function updateBoxCharCount() {
+    const textarea = document.getElementById('newBoxDescription');
+    const charCount = document.getElementById('boxCharCount');
+    const maxChars = 4095;
+
+    // Update the character count display
+    const currentLength = textarea.value.length;
+    charCount.textContent = currentLength;
+
+    // Change the color based on how close to the limit the user is
+    if (currentLength > maxChars) {
+        charCount.style.color = 'red';
+    } else if (currentLength >= maxChars * 0.8) { // 80% of max limit
+        charCount.style.color = 'orange';
+    } else {
+        charCount.style.color = 'green';
+    }
+}
+
+// Add event listener to prevent form submission if character limit exceeded
+document.addEventListener('DOMContentLoaded', function() {
+    const editBoxForm = document.getElementById('editBoxForm');
+    if (editBoxForm) {
+        editBoxForm.addEventListener('submit', function(e) {
+            const textarea = document.getElementById('newBoxDescription');
+            const maxChars = 4095;
+            if (textarea.value.length > maxChars) {
+                e.preventDefault(); // Prevent form submission
+                alert('Box description exceeds the maximum allowed characters.');
+            }
+        });
+    }
+});
+
+// Function to close the edit modal
+function closeEditBoxModal() {
+    document.getElementById('editBoxModal').style.display = 'none';
+}
+
+// Function to open the delete modal
+function openDeleteBoxModal(boxID, boxName) {
+    document.getElementById('boxToDeleteName').innerText = boxName;
+    document.getElementById('deleteBoxForm').action = '/' + '<%= user.Username %>' + '/' + boxID + '/delete';
+    document.getElementById('deleteBoxModal').style.display = 'block';
+}
+
+// Function to close the delete modal
+function closeDeleteBoxModal() {
+    document.getElementById('deleteBoxModal').style.display = 'none';
+}
+
+document.querySelector('#edit-description-form form').addEventListener('submit', function(e) {
+    const textarea = document.getElementById('UserDescription');
+    const maxChars = 4095;
+    if (textarea.value.length > maxChars) {
+        e.preventDefault(); // Prevent form submission
+        alert('Description exceeds the maximum allowed characters.');
+    }
+});
+
+function toggleEditDescription() {
+    const descriptionText = document.getElementById('description-text');
+    const editForm = document.getElementById('edit-description-form');
+    if (editForm.style.display === 'none') {
+        editForm.style.display = 'block';
+        descriptionText.style.display = 'none';  // Hide the current description text
+    } else {
+        editForm.style.display = 'none';
+        descriptionText.style.display = 'block';  // Show the current description text again
+    }
+}
+
+function toggleEditDescription() {
+    const descriptionText = document.getElementById('description-text');
+    const editForm = document.getElementById('edit-description-form');
+    if (editForm.style.display === 'none') {
+        editForm.style.display = 'block';
+        descriptionText.style.display = 'none';  // Hide the current description text
+
+        // Initialize character count when form is shown
+        updateCharCount();
+    } else {
+        editForm.style.display = 'none';
+        descriptionText.style.display = 'block';  // Show the current description text again
+    }
+}
+
+// Function to update character count
+function updateCharCount() {
+    const textarea = document.getElementById('UserDescription');
+    const charCount = document.getElementById('charCount');
+    const maxChars = 4095;
+
+    // Update the character count display
+    const currentLength = textarea.value.length;
+    charCount.textContent = currentLength;
+
+    // Change the color based on how close to the limit the user is
+    if (currentLength > maxChars) {
+        charCount.style.color = 'red';
+    } else if (currentLength >= maxChars * 0.8) { // 80% of max limit
+        charCount.style.color = 'orange';
+    } else {
+        charCount.style.color = 'green';
+    }
+}
+
+// Add event listener to textarea when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('UserDescription');
+    if (textarea) {
+        textarea.addEventListener('input', updateCharCount);
+    }
+});
+
+function triggerProfilePicUpload() {
+    document.getElementById('profilePicInput').click();
+}
+
+function submitProfilePicForm() {
+    const fileInput = document.getElementById('profilePicInput');
+    const file = fileInput.files[0];
+
+    if (file) {
+        // Optional: Validate file size (e.g., max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            alert('File size exceeds the maximum limit of 5MB.');
+            fileInput.value = ''; // Reset the input
+            return;
+        }
+
+        // Optional: Validate file type
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Invalid file type. Only JPG, PNG, and GIF are allowed.');
+            fileInput.value = ''; // Reset the input
+            return;
+        }
+
+        // Submit the form
+        document.getElementById('profilePicForm').submit();
+    }
+}
+
+function deleteProfilePicture() {
+    if (confirm('Are you sure you want to delete your profile picture?')) {
+        // Redirect to the route that handles profile picture deletion
+        window.location.href = '/<%= user.Username %>/deleteProfilePic';
+    }
+}
+
+
+let selectedLabelStyle = '';
+
+function openLabelStyleModal() {
+    document.getElementById('labelStyleModal').style.display = 'block';
+
+    // Initialize the preview
+    updateLabelStylePreview();
+}
+
+function closeLabelStyleModal() {
+    document.getElementById('labelStyleModal').style.display = 'none';
+}
+
+function selectLabelStyle(filename, imgElement) {
+    // Store the selected label style filename
+    selectedLabelStyle = filename;
+
+    // Highlight the selected image
+    const images = document.querySelectorAll('.label-style-image');
+    images.forEach(img => {
+        img.classList.remove('selected');
+    });
+    imgElement.classList.add('selected');
+
+    // Update the preview
+    updateLabelStylePreview();
+}
+
+function updateLabelStylePreview() {
+    const borderImageSliceInput = document.getElementById('borderImageSliceInput');
+    const borderImageRepeatSelect = document.getElementById('borderImageRepeatSelect');
+    const borderImageSlice = borderImageSliceInput.value || '30'; // Default value
+    const borderImageRepeat = borderImageRepeatSelect.value || 'repeat'; // Default value
+    const previewElement = document.getElementById('labelStylePreview');
+
+    if (selectedLabelStyle) {
+        previewElement.style.border = '10px solid transparent';
+        previewElement.style.borderImageSource = `url('/uploads/labelStyles/${selectedLabelStyle}')`;
+        previewElement.style.borderImageSlice = borderImageSlice;
+        previewElement.style.borderImageRepeat = borderImageRepeat;
+    } else {
+        // Reset to default if no label style is selected
+        previewElement.style.border = 'none';
+        previewElement.style.borderImage = 'none';
+    }
+}
+
+function applyLabelStyle() {
+    // Get the 'slice' and 'repeat' variable values
+    const borderImageSlice = document.getElementById('borderImageSliceInput').value;
+    const borderImageRepeat = document.getElementById('borderImageRepeatSelect').value;
+
+    // Set the hidden inputs in the form
+    document.getElementById('labelStyleUrl').value = selectedLabelStyle;
+    document.getElementById('borderImageSlice').value = borderImageSlice;
+    document.getElementById('borderImageRepeat').value = borderImageRepeat;
+
+    // Close the modal
+    closeLabelStyleModal();
+}
+
+// src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"
+// src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"
+function printBox(boxID) {
+    console.log("Print button clicked for box:", boxID);  // Debugging line
+
+    const boxElement = document.getElementById(`box-${boxID}`);  // Use the correct box ID format
+    if (!boxElement) {
+        console.error("Box element not found.");  // Add error handling if the element is not found
+        return;
+    }
+
+    html2canvas(boxElement, { scale: 2 }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 190;  // Adjust image width to fit within the PDF
+        const pageHeight = pdf.internal.pageSize.height;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+
+        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        pdf.save(`Box-${boxID}.pdf`);
+    }).catch(function(error) {
+        console.error("Error capturing box with html2canvas:", error);
+    });
+}
+
+// JavaScript function to sort boxes
+function sortBoxes() {
+    const sortOrder = document.getElementById('sortOrder').value;
+    const username = "<%= user.Username %>"; // Fetch username dynamically
+    window.location.href = `/${username}?sortOrder=${sortOrder}`;
+}
+
+function replaceSpaces(input) {
+        // Replace all spaces with underscores
+        input.value = input.value.replace(/\s+/g, '_');
+    }
+</script>
+
+<style>
+.print-btn {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        padding: 5px 10px;
+        font-size: 14px;
+        margin-left: 10px;
+    }
+
+    .print-btn:hover {
+        background-color: #218838;
+    }
+
+.delete-profile-pic-btn {
+    margin-top: 10px;
+    background-color: #dc3545; /* Red color */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 8px 15px;
+    font-size: 14px;
+}
+
+.delete-profile-pic-btn:hover {
+    background-color: #c82333;
+}
+/* Style for the edit and delete buttons */
+.edit-btn, .delete-btn {
+    margin-left: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+.delete-btn {
+    background-color: #dc3545; /* Red for delete button */
+}
+
+/* Modal styles */
+.modal {
+    display: none; 
+    position: fixed;
+    z-index: 1; 
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; 
+    background-color: rgba(0, 0, 0, 0.4); 
+}
+
+/* Modal content */
+.modal-content {
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover, .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+
+
+/* Enhanced Form Input Styling */
+#newLabelStyle {
+    display: block;
+    margin: 15px 0; /* Increase spacing for better layout */
+    padding: 12px 15px; /* More padding for a comfortable feel */
+    border-radius: 12px; /* Softer, rounded corners */
+    border: 2px solid #ddd; /* Subtle border for a cleaner look */
+    background-color: rgba(255, 255, 255, 0.95); /* Light background with slight transparency */
+    font-size: 16px;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+    transition: border-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transitions */
+    color: #333; /* Darker text for better readability */
+}
+
+/* Submit and Apply buttons */
+.btn-submit, .btn-apply {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 14px;
+    display: inline-block;
+    margin-top: 10px;
+}
+
+.btn-submit:hover, .btn-apply:hover {
+    background-color: #218838;
+}
+
+/* Label Styles Container */
+.label-styles-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+/* Style for each label image */
+.label-style-image {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
+}
+
+.label-style-image:hover {
+    transform: scale(1.1); /* Zoom effect on hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.label-style-image.selected {
+    border: 3px solid #007bff; /* Highlight selected label */
+}
+
+/* Range input for border slice */
+#borderImageSliceInput {
+    width: 100%;
+    margin: 10px 0;
+}
+
+/* Border Image Repeat select */
+#borderImageRepeatSelect {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: linear-gradient(to right, #a1c4fd, #c2e9fb); /* Light pastel gradient */
+    font-size: 16px;
+}
+
+/* Preview styling */
+.label-style-preview {
+    background: linear-gradient(to right, #a1c4fd, #c2e9fb); /* Light pastel gradient */
+    padding: 15px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 15px;
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    box-sizing: border-box;
+    width: 200px;
+}
+
+
+/* Optional: Style the preview text */
+.label-style-preview p {
+    margin: 0;
+    line-height: 80px; /* Vertically center the text */
+}
+.btn-delete-confirm {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Style for the edit button next to the description */
+.edit-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 5px 10px;
+    font-size: 14px;
+    margin-left: 10px;
+}
+
+.edit-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Form for editing the description */
+#edit-description-form textarea {
+    width: 90%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+#edit-description-form .btn-submit, #edit-description-form .btn-cancel {
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+#edit-description-form .btn-submit {
+    background-color: #28a745;
+    color: white;
+    border: none;
+}
+
+#edit-description-form .btn-cancel {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    margin-left: 10px;
+}
+
+/* Style for the character count */
+#charCountWrapper {
+    margin-top: 5px;
+    font-size: 14px;
+}
+
+#charCount {
+    font-weight: bold;
+}
+
+/* Style for the character count in edit box modal */
+#boxCharCountWrapper {
+    margin-top: 5px;
+    font-size: 14px;
+}
+
+#boxCharCount {
+    font-weight: bold;
+}
+
+/* Profile picture container with hover functionality */
+.profile-picture-wrapper {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+}
+
+/* Profile picture styling */
+.profile-picture {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ddd;
+    cursor: pointer;
+}
+
+.profile-picture:hover {
+    opacity: 0.9; /* Slight opacity change on hover */
+}
+
+/* Hidden profile picture options (Change/Delete) */
+.profile-picture-options {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent black background */
+    color: white;
+    padding: 10px;
+    border-bottom-left-radius: 50%;
+    border-bottom-right-radius: 50%;
+    display: none; /* Hidden by default */
+    text-align: center;
+}
+
+/* Show profile picture options on hover */
+.profile-picture-wrapper:hover .profile-picture-options {
+    display: block;
+}
+
+/* Buttons for changing and deleting profile picture */
+.edit-profile-pic-btn, .delete-profile-pic-btn {
+    background-color: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 5px 10px;
+    font-size: 12px;
+    margin: 5px;
+    transition: color 0.3s ease;
+}
+
+/* Change button */
+.edit-profile-pic-btn:hover {
+    color: #ff9a9e; /* Light pink on hover */
+}
+
+/* Delete button */
+.delete-profile-pic-btn:hover {
+    color: #dc3545; /* Red color on hover */
+}
+
+/* Profile info and description */
+.profile-info {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Add hover effect to make the description box look clickable */
+.user-description {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: left;
+    margin-top: 10px;
+    cursor: pointer; /* Show pointer on hover */
+    transition: background-color 0.3s ease; /* Smooth transition for hover effect */
+}
+
+.user-description:hover {
+    background-color: #e9ecef; /* Light grey on hover */
+}
+
+/* Edit and Submit Buttons */
+.edit-btn, .btn-submit, .btn-cancel {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.btn-cancel {
+    background-color: #dc3545;
+}
+
+.btn-submit:hover, .btn-cancel:hover {
+    opacity: 0.9;
+}
+
+/* QR Code Styles */
+.qr-code-container {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.qr-code-container img {
+    width: 150px;
+    height: 150px;
+}
+
+/* Modal styles (reuse or adjust existing modal styles) */
+/* .modal {
+} */
+
+.modal-content {
+    /* Existing modal-content styles */
+}
+
+/* Label Style Images */
+.label-styles-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.label-style-image {
+    width: 100px;
+    height: 100px;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.label-style-image.selected {
+    border: 2px solid blue;
+}
+
+/* Style the slider container */
+.slider-container {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+/* Style the slider itself */
+#borderImageSliceInput {
+    -webkit-appearance: none;
+    width: 200px;
+    height: 10px;
+    background: linear-gradient(to right, #ff0000, #ff9900, #ffff00, #00ff00, #00ccff, #0066ff, #cc00ff);
+    border-radius: 5px;
+    outline: none;
+    transition: background 0.3s ease;
+    margin-right: 10px;
+}
+
+#borderImageSliceInput::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #ffffff;
+    border: 2px solid #333;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+#borderImageSliceInput::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #ffffff;
+    border: 2px solid #333;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+#borderImageSliceInput::-webkit-slider-thumb:hover, 
+#borderImageSliceInput::-moz-range-thumb:hover {
+    background: #ff9900;
+}
+
+#sliceValueDisplay {
+    font-size: 16px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+/* Box Card Styling */
+.box-card {
+  background-color: white; /* Fallback */
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  overflow: hidden;
+  position: relative; /* Ensure the btn-container is positioned relative to the box */
+  transition: transform 0.2s ease;
+  cursor: pointer;
+  flex-direction: column;
+  justify-content: space-between; /* Ensure content is spaced out in the box */
+}
+
+/* Cycle through 5 different pastel backgrounds */
+.box-card:nth-child(5n+1) {
+  background: linear-gradient(to right, #a1c4fd, #c2e9fb); /* Light blue to light cyan */
+}
+
+.box-card:nth-child(5n+2) {
+  background: linear-gradient(to right, #fbc2eb, #a6c1ee); /* Soft pink to pastel blue */
+}
+
+.box-card:nth-child(5n+3) {
+  background: linear-gradient(to right, #ffecd2, #fcb69f); /* Soft orange to peach */
+}
+
+.box-card:nth-child(5n+4) {
+  background: linear-gradient(to right, #cfd9df, #e2ebf0); /* Light grey to pale blue */
+}
+
+.box-card:nth-child(5n+5) {
+  background: linear-gradient(to right, #fddb92, #d1fdff); /* Light yellow to light cyan */
+}
+.box-card:nth-child(5n+6) {
+  background: linear-gradient(to right, #b2fefa, #0ed2f7); /* Soft turquoise to bright cyan */
+}
+
+.box-card:nth-child(5n+7) {
+  background: linear-gradient(to right, #f6d365, #fda085); /* Soft yellow to peach */
+}
+
+.box-card:nth-child(5n+8) {
+  background: linear-gradient(to right, #ff9a9e, #fecfef); /* Soft pink to light pink */
+}
+
+.box-card:nth-child(5n+9) {
+  background: linear-gradient(to right, #c3cfe2, #c2e9fb); /* Light lavender to pastel blue */
+}
+
+.box-card:nth-child(5n+10) {
+  background: linear-gradient(to right, #fbc7d4, #9796f0); /* Light pink to soft purple */
+}
+
+
+/* Scale effect on hover */
+.box-card:hover {
+  transform: scale(1.05);
+}
+
+
+
+/* Initially hide buttons, only show on hover */
+.box-card:hover .btn-container {
+  display: block;
+}
+
+/* Button container for edit/delete/print buttons */
+.btn-container {
+  display: none;
+  position: absolute;
+  bottom: 0; /* Align to the bottom of the card */
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 10px;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+/* Prettier button styling */
+.btn-container button {
+  margin: 5px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 50px; /* Rounded buttons */
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for buttons */
+}
+
+/* Edit button */
+.edit-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.edit-btn:hover {
+  background-color: #0056b3;
+  transform: scale(1.05); /* Slight scale effect on hover */
+}
+
+/* Delete button */
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
+  transform: scale(1.05); /* Slight scale effect on hover */
+}
+
+/* Print button */
+.print-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.print-btn:hover {
+  background-color: #218838;
+  transform: scale(1.05); /* Slight scale effect on hover */
+}
+.qr-code-container {
+  text-align: center;
+  margin-top: 10px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.5); /* Light semi-transparent white background */
+  border-radius: 8px; /* Add some rounding for a smoother effect */
+  display: inline-block; /* Make the container fit the content */
+}
+/* Layout for the profile and create box */
+.profile-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+/* Profile card with pastel background */
+.profile-box-card {
+    background: linear-gradient(to left, #a1c4fd, #c2e9fb); /* Soft yellow to peach */
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    min-width: 300px;
+}
+
+/* Create Box card with a pastel background */
+.create-box-card {
+    background: linear-gradient(to right, #a1c4fd, #c2e9fb); /* Light blue to light cyan */
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    flex: 1;
+    min-width: 300px;
+}
+
+/* Create Box Title */
+.create-box-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* Form Group styling */
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+/* Input and Select field styling */
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    margin-top: 5px;
+    box-sizing: border-box;
+    background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white background */
+    transition: border-color 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+/* Button to add label style */
+.btn-add-label-style {
+    background-color: #ff9a9e;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-right: 10px;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.btn-add-label-style:hover {
+    background-color: #fa7d82;
+}
+
+/* Submit button styling */
+.btn-submit {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 14px;
+}
+
+.btn-submit:hover {
+    background-color: #218838;
+}
+
+/* Profile container layout */
+.profile-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+
+/* Profile picture styling */
+.profile-picture-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.profile-picture {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ddd;
+}
+
+.profile-picture:hover {
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+/* Profile info and greeting styling */
+.profile-info {
+    text-align: center;
+}
+
+.profile-info h2 {
+    margin-bottom: 10px;
+    font-size: 24px;
+    color: #333;
+}
+
+.profile-info .greeting {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+/* User description */
+.user-description {
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: left;
+}
+
+/* Form styling */
+.create-box-form .form-group {
+    margin-bottom: 15px;
+}
+
+.create-box-form label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.create-box-form input, 
+.create-box-form select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+/* Form container styling */
+.upload-label-style-form {
+    background: linear-gradient(to right, #a1c4fd, #c2e9fb); /* Light pastel gradient */
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Label styling */
+.upload-label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* Input file field */
+.file-input {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    background-color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    color: #333;
+}
+
+.file-input:hover, .file-input:focus {
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+/* Submit button */
+.btn-submit {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 14px;
+}
+
+.btn-submit:hover {
+    background-color: #218838;
+}
+
+/* Upload note styling */
+.upload-note {
+    font-size: 14px;
+    color: #666;
+    margin-top: 10px;
+}
+
+/* Sort form container with unique ID - positioned above boxes */
+#sortFormUnique {
+    display: block;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: 2px solid #ddd;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    width: 20%; /* Your desired width */
+    margin-left: 30px; /* Adds space between the form and the left wall */
+    text-align: center; /* Center align the form content */
+}
+
+/* Label styling specific to this form */
+#sortFormUnique label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    margin-right: 10px;
+}
+
+/* Select dropdown styling specific to this form */
+#sortOrderUnique {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    font-size: 14px;
+    color: #333;
+    transition: border-color 0.3s ease;
+}
+
+/* Hover and focus effects for select */
+#sortOrderUnique:hover, 
+#sortOrderUnique:focus {
+    border-color: #007bff;
+    outline: none;
+    background-color: #fff;
+}
+
+/* Box Title Container Styling */
+.box-title-container {
+    display: inline-block; /* Ensure it wraps around the text properly */
+    background-color: rgba(255, 255, 255, 0.8); /* Light semi-transparent background */
+    padding: 8px 15px; /* Add subtle padding */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Very light shadow for depth */
+    margin-top: 10px;
+    text-align: center;
+}
+
+/* Title Text Styling */
+.box-title-container h3 {
+    margin: 0; /* Remove default margin */
+    font-size: 18px; /* Adjust font size for better readability */
+    color: #333; /* Subtle dark color for the title */
+    font-weight: bold; /* Make the title stand out */
+}
+
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"></script>

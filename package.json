@@ -1,0 +1,33 @@
+{
+  "name": "againprojectfelix",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "postinstall": "npm rebuild bcrypt --build-from-source",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "bcrypt": "^5.1.1",
+    "canvas": "^2.11.2",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^5.0.0",
+    "express-session": "^1.18.0",
+    "fs": "^0.0.1-security",
+    "lodash": "^4.17.21",
+    "multer": "^1.4.5-lts.1",
+    "mysql": "^2.18.1",
+    "nodemailer": "^6.9.15",
+    "path": "^0.12.7",
+    "promise-mysql": "^5.2.0",
+    "qrcode": "^1.5.4",
+    "random": "^5.1.0",
+    "readline-promise": "^1.0.5"
+  }
+}

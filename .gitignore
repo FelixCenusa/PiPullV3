@@ -1,0 +1,12 @@
+.env
+/uploads/*
+!uploads/profiles
+!uploads/labelStyles
+/uploads/profiles/*
+/uploads/labelStyles/*
+!uploads/profiles/*.svg
+node_modules/
+
+# !uploads/profiles/*.jpg
+# !uploads/profiles/*.png
+# !uploads/profiles/*.svg

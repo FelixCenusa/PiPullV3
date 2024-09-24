@@ -1,0 +1,32 @@
+<%- include('./../partials/header.ejs') %>
+
+<h1>Login to Your Account</h1>
+
+<!-- Display error messages if login fails -->
+<% if (typeof errorMessage !== "") { %>
+    <div style="color: red;">
+        <p><%= errorMessage %></p>
+    </div>
+<% } %>
+
+<!-- Login form -->
+<form action="/login" method="POST">
+    <div>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+    </div>
+
+    <div>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+    </div>
+
+    <button type="submit">Login</button>
+</form>
+
+<!-- Add a forgot password link -->
+<p><a href="/forgotPassword">Forgot your password?</a></p>
+
+<p>Don't have an account? <a href="/register">Register here</a></p>
+
+<%- include('./../partials/footer.ejs') %>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <title>TimeToMove</title>
+    <link rel="stylesheet" href="/style/style.css">
+    <style>
+        /* Global Styles */
+        body {
+            /* Pastel gradient background */
+            background: linear-gradient(to right, #ff9a9e, #fad0c4);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Navbar styles */
+        nav {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            transition: background-color 0.3s;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+            margin: 0;
+        }
+
+        .nav-links li {
+            margin: 0 15px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #007BFF;
+        }
+
+        /* Header styles */
+        header {
+            text-align: center;
+            padding: 50px 20px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        header h1 {
+            font-size: 48px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 20px;
+            color: #666;
+        }
+
+        /* Section styles */
+        section {
+            padding: 60px 0;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUp 1s forwards;
+        }
+
+        section:nth-of-type(even) {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        section:nth-of-type(odd) {
+            background-color: rgba(255, 255, 255, 0.6);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        section h2 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        section p, section ul {
+            font-size: 18px;
+            color: #555;
+        }
+
+        section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        section ul li {
+            margin: 10px 0;
+            position: relative;
+            padding-left: 25px;
+            text-align: left;
+        }
+
+        section ul li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #007BFF;
+        }
+
+        section a {
+            color: #007BFF;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        section a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+        /* Footer styles */
+        footer {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        footer p {
+            margin: 5px 0;
+            color: #777;
+        }
+
+        footer a {
+            color: #007BFF;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        footer a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 36px;
+            }
+
+            section h2 {
+                font-size: 28px;
+            }
+
+            .nav-links {
+                flex-direction: column;
+            }
+
+            .nav-links li {
+                margin: 10px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header {
+                padding: 30px 10px;
+            }
+
+            header h1 {
+                font-size: 28px;
+            }
+
+            header p {
+                font-size: 16px;
+            }
+
+            section {
+                padding: 40px 0;
+            }
+
+            section p, section ul {
+                font-size: 16px;
+            }
+        }
+
+/* View Counts Section */
+.view-counts {
+    background-color: rgba(0, 0, 0, 0.5); /* Transparent background */
+    padding: 10px;
+    text-align: center;
+    border-radius: 5px;
+    color: #fff; /* White text for contrast */
+    width: 50%;  /* Reduce width */
+    max-width: 600px;  /* Set a maximum width */
+    margin: 0 auto; /* Center the box */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a shadow for a cleaner look */
+}
+
+.view-counts p {
+    margin: 5px 0;
+    font-size: 16px;
+    font-weight: bold; /* Thicker text */
+    color: #f1f1f1;
+}
+
+/* Toggle Button */
+.toggle-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.toggle-btn:hover {
+    background-color: #0056b3;
+}
+
+
+
+    </style>
+    <script>
+        // Intersection Observer for section animations
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('section');
+            const options = {
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if(entry.isIntersecting){
+                        entry.target.style.animationDelay = '0s';
+                        entry.target.style.animation = 'slideUp 1s forwards';
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, options);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+        const toggleBtn = document.getElementById('toggle-view-counts-btn');
+        const viewCountsSection = document.getElementById('view-counts-section');
+
+        toggleBtn.addEventListener('click', function () {
+            if (viewCountsSection.style.display === 'none' || viewCountsSection.style.display === '') {
+                viewCountsSection.style.display = 'block';
+            } else {
+                viewCountsSection.style.display = 'none';
+            }
+        });
+    });
+
+    </script>
+</head>
+<body>
+    <!-- Main navigation bar -->
+    <nav>
+        <ul class="nav-links">
+            <!-- These links are visible to both logged-in and guest users -->
+            <li><a href="/">Home</a></li>
+            <li><a href="/leaderboard">Leaderboard</a></li>
+
+            <% if (session && session.user) { %>
+                <!-- Show only when user is logged in -->
+                <li><a href="/<%= session.user.username %>">My Profile</a></li>
+                <li><a href="/logout">Logout</a></li>
+            <% } else { %>
+                <!-- Show login/register links when user is not logged in -->
+                <li><a href="/create_user">Register</a></li>
+                <li><a href="/login">Login</a></li>
+            <% } %>
+        </ul>
+    </nav>
+
+    <!-- Header Section -->
+    <header>
+        <h1>TimeToMove</h1>
+        <p>Move your files with ease.</p>
+
+        <!-- Toggle Button for View Counts -->
+        <button id="toggle-view-counts-btn" class="toggle-btn">Toggle View Counts</button>
+
+        <!-- View Counts Section -->
+        <div id="view-counts-section" class="view-counts" style="display: none;">
+            <% if (typeof viewCounts !== 'undefined') { %>
+                <p><strong>Total Views On This Page:</strong> <%= viewCounts.totalViews %></p>
+                <p><strong>Unique Views On This Page:</strong> <%= viewCounts.uniqueViews %></p>
+                <p><strong>Total Views On This WEBSITE:</strong> <%= viewCounts.totalSiteViews %></p>
+                <p><strong>Unique Views On This WEBSITE:</strong> <%= viewCounts.uniqueSiteViews %></p>
+            <% } %>
+        </div>
+    </header>
+

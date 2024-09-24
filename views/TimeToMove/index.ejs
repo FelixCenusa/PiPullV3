@@ -1,0 +1,43 @@
+<%- include('./../partials/header.ejs') %>
+<% console.log(data.lastUpdated) %>
+<p1><%= data.lastUpdated %> </p1>
+<!-- Welcome Section -->
+<section id="welcome">
+    <div class="container">
+        <h2>Welcome to TimeToMove!</h2>
+        <p>Move your files with ease and share them with the world.</p>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features">
+    <div class="container">
+        <h2>Features</h2>
+        <ul>
+            <li>Create boxes to store files</li>
+            <li>Public or private boxes</li>
+            <li>Share your boxes with others</li>
+            <li>View other users' profiles and boxes</li>
+            <li>Secure and easy to use</li>
+        </ul>
+    </div>
+</section>
+
+<!-- About Section -->
+<section id="about">
+    <div class="container">
+        <h2>About TimeToMove</h2>
+        <p>TimeToMove is a web application designed to simplify file storage and sharing. Developed by <strong>Felix Cenusa</strong>, it aims to provide users with an intuitive platform to manage and share their files.</p>
+        <p>Check out our project on <a href="https://github.com/FelixCenusa" target="_blank">GitHub</a>.</p>
+    </div>
+</section>
+
+<!-- Get Started Section -->
+<section id="get-started">
+    <div class="container">
+        <h2>Get Started</h2>
+        <p>Ready to join us? <a href="/create_user">Register for an account</a> or <a href="/login">log in</a> to your existing account.</p>
+    </div>
+</section>
+
+<%- include('./../partials/footer.ejs') %>

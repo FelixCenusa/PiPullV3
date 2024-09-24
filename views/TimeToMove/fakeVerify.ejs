@@ -1,0 +1,14 @@
+<%- include('./../partials/header.ejs') %>
+
+<h1>Verify Your EmailFAAAKKKEE its 123</h1>
+
+<p>Please enter the verification FAAAKKKEEtoken you received via email to complete your registration.</p>
+
+<form action="/fakeVerify" method="POST">
+    <label for="token">Enter Verification Token:</label>
+    <input type="text" id="token" name="token" required>
+
+    <button type="submit">Verify</button>
+</form>
+
+<%- include('./../partials/footer.ejs') %>
