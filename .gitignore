@@ -1,10 +1,10 @@
 .env
-/uploads/*
-!uploads/profiles
-!uploads/labelStyles
-/uploads/profiles/*
-/uploads/labelStyles/*
-!uploads/profiles/*.svg
+# /uploads/*
+# !uploads/profiles
+# !uploads/labelStyles
+# /uploads/profiles/*
+# /uploads/labelStyles/*
+# !uploads/profiles/*.svg
 node_modules/
 
 # !uploads/profiles/*.jpg

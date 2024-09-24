@@ -1,0 +1,16 @@
+Cerințe pentru numele de utilizator:
+Lungime: Trebuie să aibă între 3 și 20 de caractere.
+Nume de utilizator restricționate: Evitați utilizarea următoarelor nume rezervate: profiles, about, login, register, leaderboard, labelStyles.
+Unic: Numele de utilizator nu trebuie să fie deja luat.
+Cerințe pentru email:
+Format: Email-ul trebuie să fie valid (de exemplu, exemplu@domeniu.com).
+Unic: Nu trebuie să fie deja înregistrat.
+Cerințe pentru parolă:
+Lungime: Trebuie să aibă cel puțin 8 caractere.
+Complexitate: Trebuie să conțină:
+Cel puțin 1 literă mare.
+Cel puțin 1 literă mică.
+Cel puțin 1 cifră.
+Cel puțin 1 caracter special (de exemplu, !@#$%^&*).
+Pas final:
+După înregistrare, veți primi un email de verificare. Urmați linkul pentru a verifica contul în termen de 15 minute, altfel tokenul va expira.
