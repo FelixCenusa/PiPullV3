@@ -6,8 +6,7 @@ const path = require('path');
 const router = express.Router();
 const fs = require('fs');
 const archiver = require('archiver');
-const QRCode = require('qrcode'); // Add this line
-const { createCanvas } = require('canvas');
+const QRCode = require('qrcode'); // Using qrcode without canvas
 const sanitizeHtml = require('sanitize-html');
 // const ffmpeg = require('fluent-ffmpeg');
 
@@ -470,11 +469,10 @@ router.get('/:username', async (req, res) => {
     const sortOrder = req.query.sortOrder || 'recent';  // Default to 'recent' if no sort order is provided
     
     await TimeToMove.recordPageView(req, `${username}`);
-     
+
     // Retrieve the view counts
     const viewCounts = await TimeToMove.getPageViewCounts(`${username}`);
-    // Render the page and pass the view counts
-    // async         viewCounts
+
     let sortQuery;
     if (sortOrder === 'mostContent') {
         sortQuery = 'ORDER BY NrOfFiles DESC';  // Sort by the number of files in each box
@@ -498,21 +496,15 @@ router.get('/:username', async (req, res) => {
         for (const box of userBoxes) {
             if (box.IsBoxPublic) {
                 const boxURL = `${req.protocol}://${req.get('host')}/${username}/${box.TitleChosen}`;
-        
-                // Create a canvas to draw the QR code
-                const canvas = createCanvas(200, 200); // Adjust size as needed
-        
-                // Generate QR code on the canvas
-                await QRCode.toCanvas(canvas, boxURL, {
+                
+                // Generate QR code as Data URL (base64) without canvas
+                const qrCodeDataURL = await QRCode.toDataURL(boxURL, {
                     color: {
                         dark: '#000000', // QR code color (black)
                         light: '#00000000' // Transparent background (RGBA)
                     }
                 });
-        
-                // Convert the canvas to a Data URL
-                const qrCodeDataURL = canvas.toDataURL();
-        
+                
                 box.qrCodeDataURL = qrCodeDataURL;
             } else {
                 box.qrCodeDataURL = null;
