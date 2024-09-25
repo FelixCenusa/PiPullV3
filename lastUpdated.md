@@ -1,2 +1,1 @@
-Test that the repo updated: 
-code version so far 1.2.1 updated last 2024/09/25 10:47
+--This text should be replaced by the timestamp automatically--
