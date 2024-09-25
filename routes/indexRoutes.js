@@ -34,6 +34,17 @@ router.get('/contact', async(req, res) => {
     res.render('TimeToMove/contact',{ session: req.session,viewCounts });
 });
 
+// Route for Contact Us
+router.get('/security', async(req, res) => {
+    // Record the page view
+    await TimeToMove.recordPageView(req, '/security');
+    // Retrieve the view counts
+    const viewCounts = await TimeToMove.getPageViewCounts('/security');
+    // Render the page and pass the view counts
+    // async         viewCounts
+    res.render('TimeToMove/security',{ session: req.session,viewCounts });
+});
+
 // Route to handle Contact form submission
 router.post('/submit_contact', async (req, res) => {
     let { name, email, message } = req.body;
@@ -54,16 +65,6 @@ router.post('/submit_contact', async (req, res) => {
     }
 });
 
-// Route for Contact Us
-router.get('/security', async(req, res) => {
-    // Record the page view
-    await TimeToMove.recordPageView(req, '/security');
-    // Retrieve the view counts
-    const viewCounts = await TimeToMove.getPageViewCounts('/security');
-    // Render the page and pass the view counts
-    // async         viewCounts
-    res.render('TimeToMove/security',{ session: req.session,viewCounts });
-});
 
 router.get("/create_user", async (req, res) => {
     // Record the page view
