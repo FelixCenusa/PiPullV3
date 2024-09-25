@@ -8,6 +8,7 @@ const fs = require('fs');
 const archiver = require('archiver');
 const QRCode = require('qrcode'); // Add this line
 const { createCanvas } = require('canvas');
+const sanitizeHtml = require('sanitize-html');
 // const ffmpeg = require('fluent-ffmpeg');
 
 
@@ -36,6 +37,10 @@ router.get('/contact', async(req, res) => {
 // Route to handle Contact form submission
 router.post('/submit_contact', async (req, res) => {
     const { name, email, message } = req.body;
+    // Sanitize inputs to remove any potential HTML/JS
+    name = sanitizeHtml(name);
+    email = sanitizeHtml(email);
+    message = sanitizeHtml(message);
 
     // Send email using the email service
     const emailSent = await TimeToMove.sendEmail(name, email, message);
@@ -62,6 +67,10 @@ router.get("/create_user", async (req, res) => {
 
 router.post('/create_user', async (req, res) => {
     const { username, email, password, isPublic } = req.body;
+    // Sanitize inputs to remove any potential HTML/JS
+    username = sanitizeHtml(username);
+    email = sanitizeHtml(email);
+    password = sanitizeHtml(password);
     let data = {};
     try {
         data.lastUpdated = fs.readFileSync(path.join(__dirname, '..', 'lastUpdated.md'), 'utf8');
@@ -192,6 +201,8 @@ router.get('/verify', async (req, res) => {
 router.post('/verify', async (req, res) => {
     const { token } = req.body; // Get the token from the form
     const result = await TimeToMove.verify(token);
+    result = sanitizeHtml(result);
+    
     
     if (result.success) {
         return res.json({ success: true, message: result.message });
@@ -218,6 +229,8 @@ router.get('/login', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
+    password = sanitizeHtml(password);
+    username = sanitizeHtml(username);
 
     try {
         const result = await TimeToMove.loginUser(username, password);
@@ -255,6 +268,7 @@ router.get('/forgotPassword', async (req, res) => {
 // Handle forgot password form submission
 router.post('/forgotPassword', async (req, res) => {
     const { email } = req.body;
+    email = sanitizeHtml(email);
     try {
         // Check if the email exists and generate a reset token along with the username
         const result = await TimeToMove.generatePasswordResetToken(email);
@@ -303,6 +317,7 @@ router.get('/resetPassword', async (req, res) => {
 // Handle reset password form submission
 router.post('/resetPassword', async (req, res) => {
     const { token, password } = req.body;
+    password = sanitizeHtml(password);
 
     try {
         const result = await TimeToMove.resetPassword(token, password);
@@ -335,6 +350,11 @@ router.post('/create_box', async (req, res) => {
     console.log(req.body);
     const { label, isPublic, labelStyleUrl, borderImageSlice, borderImageRepeat } = req.body;
     const userId = req.session.user.id;  // Get the user ID from the session
+    // sanitize inputs
+    label = sanitizeHtml(label);
+    labelStyleUrl = sanitizeHtml(labelStyleUrl);
+    borderImageSlice = sanitizeHtml(borderImageSlice);
+    borderImageRepeat = sanitizeHtml(borderImageRepeat);
     // console.log("req.body here");
     // console.log("userId", userId);
     // console.log("label", label);
@@ -519,6 +539,9 @@ router.get('/:username', async (req, res) => {
 router.post('/:username/editDescription', async (req, res) => {
     const { username } = req.params;
     const { UserDescription } = req.body;
+    // Sanitize inputs to remove any potential HTML/JS
+    UserDescription = sanitizeHtml(UserDescription);
+    username = sanitizeHtml(username);
 
     try {
         // Ensure the logged-in user is the one trying to edit their profile
@@ -581,7 +604,9 @@ router.get('/:username/deleteProfilePic', async function (req, res) {
 router.post('/:username/:boxID/editBox', async (req, res) => {
     const { username, boxID } = req.params;
     const { newBoxName, newBoxDescription } = req.body;
-
+    // Sanitize inputs to remove any potential HTML/JS
+    newBoxName = sanitizeHtml(newBoxName);
+    newBoxDescription = sanitizeHtml(newBoxDescription);
     try {
         // Ensure the user is logged in and is the owner of the box
         if (req.session.user && req.session.user.username === username) {
@@ -959,7 +984,9 @@ router.get('/:username/:boxID/downloadAll', async (req, res) => {
 router.post('/:username/:boxID/rename', async (req, res) => {
     const { username, boxID } = req.params;
     const { newBoxName, oldBoxName } = req.body; // Ensure oldBoxName is passed
-
+    // Sanitize inputs to remove any potential HTML/JS
+    newBoxName = sanitizeHtml(newBoxName);
+    oldBoxName = sanitizeHtml(oldBoxName);
     try {
         if (req.session.user && req.session.user.username === username) {
             const result = await TimeToMove.renameBox(boxID, newBoxName, oldBoxName, username);
@@ -980,6 +1007,9 @@ router.post('/:username/:boxID/rename', async (req, res) => {
 
 router.post('/:username/:boxID/delete', async (req, res) => {
     const { username, boxID } = req.params;
+    // Sanitize inputs to remove any potential HTML/JS
+    username = sanitizeHtml(username);
+    boxID = sanitizeHtml(boxID);
 
     try {
         // Fetch the user
@@ -1013,6 +1043,10 @@ router.post('/:username/:boxID/delete', async (req, res) => {
 
 router.post('/:username/:boxName/:mediaID/delete', async (req, res) => {
     const { username, boxName, mediaID } = req.params;
+    // Sanitize inputs to remove any potential HTML/JS
+    username = sanitizeHtml(username);
+    boxName = sanitizeHtml(boxName);
+    mediaID = sanitizeHtml(mediaID);
 
     try {
         // Check if the logged-in user is the owner of the box
@@ -1063,6 +1097,9 @@ const uploadProfilePic = multer({
 // Route to handle profile picture upload
 router.post('/:username/uploadProfilePic', function (req, res) {
     const username = req.params.username;
+    // Sanitize inputs to remove any potential HTML/JS
+    username = sanitizeHtml(username);
+
 
     // Ensure the user is logged in and is the owner of the profile
     if (!req.session.user || req.session.user.username !== username) {

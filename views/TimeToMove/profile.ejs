@@ -228,15 +228,14 @@
         <h2>Edit Box</h2>
         <form id="editBoxForm" method="POST" action="">
             <label for="newBoxName">Box Name:</label>
-            <input type="text" id="newBoxName" name="newBoxName" placeholder="Enter new box name" required oninput="replaceSpaces(this)">
+            <input type="text" id="newBoxName" name="newBoxName" placeholder="Enter new box name" required oninput="sanitizeInput(this)" pattern="[a-zA-Z0-9 _-/]+" title="Only letters, numbers, spaces, underscores, slashes and dashes are allowed.">
 
-            
             <label for="newBoxDescription">Box Description:</label>
-            <textarea id="newBoxDescription" name="newBoxDescription" placeholder="Enter box description (max 4095 characters)" maxlength="4095"></textarea>
+            <textarea id="newBoxDescription" name="newBoxDescription" placeholder="Enter box description (max 4095 characters)" maxlength="4095" oninput="sanitizeInput(this)" pattern="[a-zA-Z0-9 _.,!?()-]+" title="Only letters, numbers, spaces, and common punctuation are allowed."></textarea>
             <div id="boxCharCountWrapper">
                 <span id="boxCharCount">0</span>/4095 characters
             </div>
-            
+
             <button type="submit">Update</button>
         </form>
     </div>
@@ -526,6 +525,22 @@ function replaceSpaces(input) {
         // Replace all spaces with underscores
         input.value = input.value.replace(/\s+/g, '_');
     }
+
+function sanitizeInput(input) {
+    // Prevent input of characters like < and >
+    const sanitizedValue = input.value.replace(/[<>]/g, '');
+    sanitizedValue = sanitizedValue.replace('&l;', '');
+    sanitizedValue = sanitizedValue.replace('&g;', '');
+    sanitizedValue = sanitizedValue;
+    updateBoxCharCount();
+}
+
+// Update character count for the description
+function updateBoxCharCount() {
+    const textarea = document.getElementById('newBoxDescription');
+    const charCount = document.getElementById('boxCharCount');
+    charCount.textContent = textarea.value.length;
+}
 </script>
 
 <style>

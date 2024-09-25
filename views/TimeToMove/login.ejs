@@ -3,25 +3,27 @@
 <h1>Login to Your Account</h1>
 
 <!-- Display error messages if login fails -->
-<% if (typeof errorMessage !== "") { %>
+<% if (typeof errorMessage !== 'undefined' && errorMessage !== "") { %>
     <div style="color: red;">
         <p><%= errorMessage %></p>
     </div>
 <% } %>
 
 <!-- Login form -->
-<form action="/login" method="POST">
+<form id="loginForm" action="/login" method="POST">
     <div>
         <label for="username">Username:</label>
+        <small id="usernameError" style="color: red;"></small>
         <input type="text" id="username" name="username" required>
     </div>
 
     <div>
         <label for="password">Password:</label>
+        <small id="passwordError" style="color: red;"></small>
         <input type="password" id="password" name="password" required>
     </div>
 
-    <button type="submit">Login</button>
+    <button type="submit" id="loginSubmitBtn" disabled>Login</button>
 </form>
 
 <!-- Add a forgot password link -->
@@ -30,3 +32,49 @@
 <p>Don't have an account? <a href="/register">Register here</a></p>
 
 <%- include('./../partials/footer.ejs') %>
+
+<script>
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+
+    const usernameError = document.getElementById('usernameError');
+    const passwordError = document.getElementById('passwordError');
+
+    // Define the regex for validation
+    const usernameRegex = /^[a-zA-Z0-9_]+$/; // No spaces, no dots, allow underscores
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/; // At least 8 characters, uppercase, lowercase, number, special char
+
+    function validateLoginForm() {
+        let valid = true;
+
+        // Validate username
+        if (!usernameRegex.test(usernameInput.value)) {
+            usernameError.textContent = 'Username cannot contain spaces or dots.';
+            valid = false;
+        } else if (usernameInput.value.length < 3 || usernameInput.value.length > 20) {
+            usernameError.textContent = 'Username must be between 3 and 20 characters.';
+            valid = false;
+        } else {
+            usernameError.textContent = '';
+        }
+
+        // Validate password
+        if (!passwordRegex.test(passwordInput.value)) {
+            passwordError.textContent = 'Password must be at least 8 characters long, contain upper and lowercase letters, numbers, and a special character.';
+            valid = false;
+        } else {
+            passwordError.textContent = '';
+        }
+
+        // Enable or disable the submit button based on validation
+        loginSubmitBtn.disabled = !valid;
+    }
+
+    // Add event listeners for input changes
+    usernameInput.addEventListener('input', validateLoginForm);
+    passwordInput.addEventListener('input', validateLoginForm);
+
+    // Initial validation
+    validateLoginForm();
+</script>
