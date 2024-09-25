@@ -5,7 +5,7 @@ const session = require('express-session');
 const app = express();
 const indexRoutes = require("./routes/indexRoutes.js");
 const path = require('path');
-const port = 1339;
+const port = 1337;
 
 // Set up session middleware
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
