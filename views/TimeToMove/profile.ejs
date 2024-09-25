@@ -258,6 +258,26 @@
 
 <script>
 
+// Function to sanitize input by escaping potentially harmful characters
+function sanitizeInput(input) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        "/": '&#x2F;',
+    };
+    const reg = /[&<>"'/]/ig;
+    return input.replace(reg, (match) => (map[match]));
+}
+
+// Sanitize the box title before submission
+document.querySelector('.create-box-form').addEventListener('submit', function (e) {
+    const boxTitleInput = document.getElementById('label');
+
+    boxTitleInput.value = sanitizeInput(boxTitleInput.value);
+});
 
 // Function to open the edit modal
 function openEditBoxModal(boxID, currentBoxName, currentBoxDescription) {

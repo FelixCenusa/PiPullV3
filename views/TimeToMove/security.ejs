@@ -1,0 +1,96 @@
+<%- include('./../partials/header.ejs') %>
+
+<div class="security-page">
+    <h1>How I Approach Security</h1>
+    <p>
+        While building TimeToMove, I’ve made security a priority. Protecting your data is important, and I’ve put in place several measures to ensure a safe experience. Here's what I’ve done to make sure things stay secure:
+    </p>
+
+    <h2>Input Validation & Sanitization</h2>
+    <p>
+        One common security risk is Cross-Site Scripting (XSS), where harmful code can be injected into a website. To prevent this, I’ve implemented input validation and sanitization throughout the platform:
+    </p>
+    <ul>
+        <li><strong>Sanitizing User Inputs:</strong> All inputs are cleaned up by removing any potentially harmful HTML or JavaScript before they’re processed. This helps keep the site safe from malicious scripts.</li>
+        <li><strong>HTML Encoding:</strong> Anytime user-generated content is displayed, it’s encoded so that special characters can’t be interpreted as code.</li>
+        <li><strong>Regex Validation:</strong> I use regular expressions to ensure that fields like usernames, emails, and passwords follow specific formats, reducing the risk of invalid data being submitted.</li>
+    </ul>
+
+    <h2>Password Security</h2>
+    <p>
+        Your passwords are treated with extra care:
+    </p>
+    <ul>
+        <li><strong>Hashing and Salting:</strong> When you sign up or change your password, it's not stored as plain text. I use bcrypt to hash and salt your password, meaning even if someone gets access to the database, they won’t be able to figure out your password due to the strong and data destructive hashing.</li>
+        <li><strong>Password Strength Requirements:</strong> There’s a minimum requirement for password strength, making sure it includes a mix of uppercase and lowercase letters, numbers, and special characters to keep things secure.</li>
+    </ul>
+
+    <h2>Session Security</h2>
+    <p>
+        Every user’s session is designed to be secure, ensuring that unauthorized access is blocked:
+    </p>
+    <ul>
+        <li><strong>Secure Session Management:</strong> Sessions are tied to users and stored securely. On top of that, session cookies are set up to prevent attacks like cross-site scripting.</li>
+        <li><strong>Session Expiration:</strong> If your session is inactive for a while, it will automatically expire, so if you forget to log out, your account remains safe.</li>
+    </ul>
+
+    <h2>IP-Based View Counting</h2>
+    <p>
+        To keep track of page views while respecting your privacy, I’ve set up a system that uses hashed IP addresses:
+    </p>
+    <ul>
+        <li><strong>Hashed IP Addresses:</strong> I hash IP addresses before storing them, so they can’t be traced back to you. This way, I can differentiate between total and unique views without compromising privacy.</li>
+        <li><strong>Unique View Counting:</strong> By hashing IPs, I can count unique visits to each page and provide accurate stats while keeping everything anonymous.</li>
+    </ul>
+
+    
+
+    <h2>File Upload Security</h2>
+<p>
+    I’ve implemented a robust file upload system that allows a wide range of file types, ensuring flexibility without compromising security. Here are the key security measures in place:
+</p>
+<ul>
+    <li><strong>File Size Limits:</strong> We impose limits on file sizes to avoid oversized uploads that could affect system performance or be used for denial-of-service attacks.</li>
+    <li><strong>File Path and Name Security:</strong> Uploaded files are renamed and stored in secure locations outside the web root. Path and filename sanitization ensures that no malicious paths or special characters compromise the system.</li>
+    <li><strong>MIME Type Checking:</strong> We verify the file's MIME type to ensure that the content matches the declared file extension, preventing malicious content disguised as a safe file type.</li>
+</ul>
+
+
+    <h2>SQL Injection Prevention</h2>
+    <p>
+        SQL injection is another common risk, but I’ve taken steps to prevent it. All database queries use parameterized statements, ensuring that user input is never directly inserted into SQL commands, which helps eliminate the risk of injection attacks.
+    </p>
+
+    <h2>Staying on Top of Security</h2>
+    <p>
+        Security is an ongoing process. I continuously monitor the platform for vulnerabilities and apply updates when necessary. If you ever notice anything that seems off, please <a href="/contact">let me know</a> so I can address it right away.
+    </p>
+</div>
+
+<%- include('./../partials/footer.ejs') %>
+
+<style>
+    .security-page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .security-page h1, h2 {
+        color: #333;
+    }
+    .security-page p {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #666;
+    }
+    .security-page ul {
+        margin-left: 20px;
+    }
+    .security-page ul li {
+        font-size: 15px;
+        margin-bottom: 10px;
+    }
+</style>

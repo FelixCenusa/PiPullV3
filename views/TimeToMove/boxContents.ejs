@@ -9,7 +9,7 @@
 <% } %>
 
 <!-- if the box object is not null, display the box contents -->
-<% if (box) { %>
+<% if ( typeof box !== 'undefined' && box !== null) { %>
     <%= console.log("box") %>
     <%= console.log(box) %>
     <%= console.log("box.TitleChosen") %>

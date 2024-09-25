@@ -36,7 +36,7 @@ router.get('/contact', async(req, res) => {
 
 // Route to handle Contact form submission
 router.post('/submit_contact', async (req, res) => {
-    const { name, email, message } = req.body;
+    let { name, email, message } = req.body;
     // Sanitize inputs to remove any potential HTML/JS
     name = sanitizeHtml(name);
     email = sanitizeHtml(email);
@@ -66,7 +66,7 @@ router.get("/create_user", async (req, res) => {
 });
 
 router.post('/create_user', async (req, res) => {
-    const { username, email, password, isPublic } = req.body;
+    let { username, email, password, isPublic } = req.body;
     // Sanitize inputs to remove any potential HTML/JS
     username = sanitizeHtml(username);
     email = sanitizeHtml(email);
@@ -163,13 +163,7 @@ router.get('/', async (req, res) => {
     }
     
 
-    if (isLoggedIn) {
-        // If the user is logged in, show the dashboard or custom content
-        res.render('TimeToMove/index.ejs', { user: req.session.user,session: req.session, data, viewCounts });
-    } else {
-        // If not logged in, show the homepage or a general landing page
-        res.render('TimeToMove/index.ejs',{ user: req.session.user,session: req.session, data, viewCounts });
-    }
+    res.render('TimeToMove/index.ejs', { user: req.session.user,session: req.session, data, viewCounts });
 });
 
 
@@ -200,7 +194,7 @@ router.get('/verify', async (req, res) => {
 // Route to handle verification form submission (POST)
 router.post('/verify', async (req, res) => {
     const { token } = req.body; // Get the token from the form
-    const result = await TimeToMove.verify(token);
+    let result = await TimeToMove.verify(token);
     result = sanitizeHtml(result);
     
     
@@ -228,7 +222,7 @@ router.get('/login', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
+    let { username, password } = req.body;
     password = sanitizeHtml(password);
     username = sanitizeHtml(username);
 
@@ -267,7 +261,7 @@ router.get('/forgotPassword', async (req, res) => {
 
 // Handle forgot password form submission
 router.post('/forgotPassword', async (req, res) => {
-    const { email } = req.body;
+    let { email } = req.body;
     email = sanitizeHtml(email);
     try {
         // Check if the email exists and generate a reset token along with the username
@@ -316,7 +310,7 @@ router.get('/resetPassword', async (req, res) => {
 
 // Handle reset password form submission
 router.post('/resetPassword', async (req, res) => {
-    const { token, password } = req.body;
+    let { token, password } = req.body;
     password = sanitizeHtml(password);
 
     try {
@@ -348,13 +342,15 @@ router.post('/create_box', async (req, res) => {
         return res.redirect('/login');
     }
     console.log(req.body);
-    const { label, isPublic, labelStyleUrl, borderImageSlice, borderImageRepeat } = req.body;
-    const userId = req.session.user.id;  // Get the user ID from the session
+    let { label, isPublic, labelStyleUrl, borderImageSlice, borderImageRepeat } = req.body;
+    let userId = req.session.user.id;  // Get the user ID from the session
     // sanitize inputs
     label = sanitizeHtml(label);
     labelStyleUrl = sanitizeHtml(labelStyleUrl);
     borderImageSlice = sanitizeHtml(borderImageSlice);
     borderImageRepeat = sanitizeHtml(borderImageRepeat);
+    userId = sanitizeHtml(userId);
+
     // console.log("req.body here");
     // console.log("userId", userId);
     // console.log("label", label);
@@ -454,6 +450,16 @@ router.get('/leaderboard', async (req, res) => {
 
 
 
+// Make the route for the security.ejs page
+router.get('/security', async (req, res) => {
+    // Record the page view
+    await TimeToMove.recordPageView(req, '/security');
+    // Retrieve the view counts
+    const viewCounts = await TimeToMove.getPageViewCounts('/security');
+    // Render the page and pass the view counts
+    // async         viewCounts
+    res.render('TimeToMove/security',{ session: req.session, viewCounts });
+});
 
 router.get('/:username', async (req, res) => {
     const { username } = req.params;
@@ -537,8 +543,8 @@ router.get('/:username', async (req, res) => {
 
 // Route for updating the user description
 router.post('/:username/editDescription', async (req, res) => {
-    const { username } = req.params;
-    const { UserDescription } = req.body;
+    let { username } = req.params;
+    let { UserDescription } = req.body;
     // Sanitize inputs to remove any potential HTML/JS
     UserDescription = sanitizeHtml(UserDescription);
     username = sanitizeHtml(username);
@@ -602,9 +608,11 @@ router.get('/:username/deleteProfilePic', async function (req, res) {
 
 // Route to update box name and description
 router.post('/:username/:boxID/editBox', async (req, res) => {
-    const { username, boxID } = req.params;
-    const { newBoxName, newBoxDescription } = req.body;
+    let { username, boxID } = req.params;
+    let { newBoxName, newBoxDescription } = req.body;
     // Sanitize inputs to remove any potential HTML/JS
+    username = sanitizeHtml(username);
+    boxID = sanitizeHtml(boxID);
     newBoxName = sanitizeHtml(newBoxName);
     newBoxDescription = sanitizeHtml(newBoxDescription);
     try {
@@ -982,9 +990,11 @@ router.get('/:username/:boxID/downloadAll', async (req, res) => {
 });
 
 router.post('/:username/:boxID/rename', async (req, res) => {
-    const { username, boxID } = req.params;
-    const { newBoxName, oldBoxName } = req.body; // Ensure oldBoxName is passed
+    let { username, boxID } = req.params;
+    let { newBoxName, oldBoxName } = req.body; // Ensure oldBoxName is passed
     // Sanitize inputs to remove any potential HTML/JS
+    username = sanitizeHtml(username);	
+    boxID = sanitizeHtml(boxID);
     newBoxName = sanitizeHtml(newBoxName);
     oldBoxName = sanitizeHtml(oldBoxName);
     try {
@@ -1006,7 +1016,7 @@ router.post('/:username/:boxID/rename', async (req, res) => {
 });
 
 router.post('/:username/:boxID/delete', async (req, res) => {
-    const { username, boxID } = req.params;
+    let { username, boxID } = req.params;
     // Sanitize inputs to remove any potential HTML/JS
     username = sanitizeHtml(username);
     boxID = sanitizeHtml(boxID);
@@ -1042,7 +1052,7 @@ router.post('/:username/:boxID/delete', async (req, res) => {
 
 
 router.post('/:username/:boxName/:mediaID/delete', async (req, res) => {
-    const { username, boxName, mediaID } = req.params;
+    let { username, boxName, mediaID } = req.params;
     // Sanitize inputs to remove any potential HTML/JS
     username = sanitizeHtml(username);
     boxName = sanitizeHtml(boxName);
@@ -1096,9 +1106,8 @@ const uploadProfilePic = multer({
 
 // Route to handle profile picture upload
 router.post('/:username/uploadProfilePic', function (req, res) {
-    const username = req.params.username;
+    username = sanitizeHtml(req.params.username);
     // Sanitize inputs to remove any potential HTML/JS
-    username = sanitizeHtml(username);
 
 
     // Ensure the user is logged in and is the owner of the profile
