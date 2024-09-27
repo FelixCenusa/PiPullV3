@@ -581,7 +581,7 @@ router.get('/:username/deleteProfilePic', async function (req, res) {
         // Delete the profile picture file from the server
         const user = await TimeToMove.getUserByUsername(username);
         if (user && user.UserPFP) {
-            const profilePicPath = path.join(__dirname, '..', 'uploads', 'profiles', user.UserPFP);
+            const profilePicPath = path.join(__dirname, '..', 'uploads', req.params.username, user.UserPFP);
             // Delete the file if it exists
             fs.unlink(profilePicPath, (err) => {
                 if (err && err.code !== 'ENOENT') {
@@ -1072,13 +1072,16 @@ router.post('/:username/:boxName/:mediaID/delete', async (req, res) => {
 // Configure multer for profile picture uploads
 const profilePicStorage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadPath = path.join(__dirname, '..', 'uploads', 'profiles');
+        const uploadPath = path.join(__dirname, '..', 'uploads', req.params.username);
         cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
         const username = req.params.username;
         const ext = path.extname(file.originalname);
-        const filename = username + '_profile' + ext;
+        let fileOriginalName = file.originalname;
+        // delete the file extension from the original name including malicious code
+        fileOriginalName = fileOriginalName.replace(ext, '');
+        const filename = username + '_profilePic' + fileOriginalName + ext;
         cb(null, filename);
     }
 });
@@ -1117,7 +1120,8 @@ router.post('/:username/uploadProfilePic', function (req, res) {
 
         // Update the user's profile picture path in the database
         try {
-            let filename = req.file.filename;
+            // get the files name
+            const filename = req.file.filename;
             console.log("filename FROM PFP", filename);
             await TimeToMove.updateUserProfilePic(username, filename);
 
