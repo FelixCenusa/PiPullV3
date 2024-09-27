@@ -42,7 +42,7 @@
     const passwordError = document.getElementById('passwordError');
 
     // Define the regex for validation
-    const usernameRegex = /^[a-zA-Z0-9_]+$/; // No spaces, no dots, allow underscores
+    const usernameRegex = /^[a-zA-Z0-9_é]+$/; // No spaces, no dots, allow underscores
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/; // At least 8 characters, uppercase, lowercase, number, special char
 
     function validateLoginForm() {
