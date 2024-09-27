@@ -293,9 +293,10 @@ async function verify(token) {
         const insertSql = `INSERT INTO Users (Username, Email, PasswordHash)
                            VALUES (?, ?, ?)`;
         await db.query(insertSql, [tempUser.Username, tempUser.Email, tempUser.PasswordHash]);
-
+        console.log("GOT THIS FAR 1")
         // Delete the user from TempUsers after verification
         await db.query(`DELETE FROM TempUsers WHERE VerificationToken = ?`, [token]);
+        console.log("GOT THIS FAR 2")
 
         return { success: true, message: 'Your email has been successfully verified!' };
     } catch (error) {

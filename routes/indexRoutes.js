@@ -209,8 +209,7 @@ router.get('/verify', async (req, res) => {
 // Route to handle verification form submission (POST)
 router.post('/verify', async (req, res) => {
     const { token } = req.body; // Get the token from the form
-    let result = await TimeToMove.verify(token);
-    result = sanitizeHtml(result);
+    const result = await TimeToMove.verify(token);
     
     
     if (result.success) {
