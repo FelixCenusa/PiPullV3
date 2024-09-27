@@ -30,7 +30,7 @@ async function sendVerificationEmail(toEmail, token) {
         html: `<h2>Email Verification</h2>
                <p>Click the link below to verify your email:</p>
                <a href="${verificationLink}">Verify Email</a>
-               <p>The link is valid for 15 minutes.</p>
+               <p>The link is valid for 24 hours.</p>
                <p>Or copy and paste the following digits into the TimeToMove website:</p>
                <h1>${token}</h1>
                <p>If you didn't request this email, you can safely ignore it.</p>`
@@ -278,14 +278,14 @@ async function verify(token) {
         console.log("createdAt", createdAt)
         console.log("tokenAge", tokenAge)
 
-        if (tokenAge > 75) {
+        if (tokenAge > 1440) {
             // Delete the expired token
             await db.query(`DELETE FROM TempUsers WHERE VerificationToken = ?`, [token]);
             return { success: false, message: 'Token has expired. Please register again.' };
         }
 
-        // Clean up any other expired temp users (15-minute expiration check)
-        const cleanupSql = `DELETE FROM TempUsers WHERE TIMESTAMPDIFF(MINUTE, CreatedAt, NOW()) > 15`;
+        // Clean up any other expired temp users (24 hours expiration check)
+        const cleanupSql = `DELETE FROM TempUsers WHERE TIMESTAMPDIFF(MINUTE, CreatedAt, NOW()) > 1440`;
         await db.query(cleanupSql);
         console.log('Expired temp users cleaned up.');
 

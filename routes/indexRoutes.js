@@ -1118,7 +1118,7 @@ router.post('/:username/uploadProfilePic', function (req, res) {
 
         // Update the user's profile picture path in the database
         try {
-            const filename = req.file.filename;
+            let filename = req.file.filename;
             await TimeToMove.updateUserProfilePic(username, filename);
 
             // Redirect back to the user's profile
