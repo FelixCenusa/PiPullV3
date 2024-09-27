@@ -4,7 +4,49 @@
     <meta charset="UTF-8">
     <title>TimeToMove</title>
     <link rel="stylesheet" href="/style/style.css">
-    <link rel="icon" href="favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/faviconNNN.ico?v=2">
+</head>
+<body>
+    <!-- Main navigation bar -->
+    <nav>
+        <ul class="nav-links">
+            <!-- These links are visible to both logged-in and guest users -->
+            <li><a href="/">Home</a></li>
+            <li><a href="/leaderboard">Leaderboard</a></li>
+
+            <% if (session && session.user) { %>
+                <!-- Show only when user is logged in -->
+                <li><a href="/<%= session.user.username %>">My Profile</a></li>
+                <li><a href="/logout">Logout</a></li>
+            <% } else { %>
+                <!-- Show login/register links when user is not logged in -->
+                <li><a href="/create_user">Register</a></li>
+                <li><a href="/login">Login</a></li>
+            <% } %>
+            <li><a href="/security">Security</a></li>
+        </ul>
+    </nav>
+
+    <!-- Header Section -->
+    <header>
+        <h1>TimeToMove</h1>
+        <p>Move your files with ease</p>
+
+        <!-- Toggle Button for View Counts -->
+        <button id="toggle-view-counts-btn" class="toggle-btn">Toggle View Counts</button>
+
+        <!-- View Counts Section -->
+        <div id="view-counts-section" class="view-counts" style="display: none;">
+            <% if (typeof viewCounts !== 'undefined') { %>
+                <p><strong>Total Views On This Page:</strong> <%= viewCounts.totalViews %></p>
+                <p><strong>Unique Views On This Page:</strong> <%= viewCounts.uniqueViews %></p>
+                <p><strong>Total Views On This WEBSITE:</strong> <%= viewCounts.totalSiteViews %></p>
+                <p><strong>Unique Views On This WEBSITE:</strong> <%= viewCounts.uniqueSiteViews %></p>
+            <% } %>
+        </div>
+    </header>
+
+
     <style>
         /* Global Styles */
         body {
@@ -285,44 +327,3 @@
     });
 
     </script>
-</head>
-<body>
-    <!-- Main navigation bar -->
-    <nav>
-        <ul class="nav-links">
-            <!-- These links are visible to both logged-in and guest users -->
-            <li><a href="/">Home</a></li>
-            <li><a href="/leaderboard">Leaderboard</a></li>
-
-            <% if (session && session.user) { %>
-                <!-- Show only when user is logged in -->
-                <li><a href="/<%= session.user.username %>">My Profile</a></li>
-                <li><a href="/logout">Logout</a></li>
-            <% } else { %>
-                <!-- Show login/register links when user is not logged in -->
-                <li><a href="/create_user">Register</a></li>
-                <li><a href="/login">Login</a></li>
-            <% } %>
-            <li><a href="/security">Security</a></li>
-        </ul>
-    </nav>
-
-    <!-- Header Section -->
-    <header>
-        <h1>TimeToMove</h1>
-        <p>Move your files with ease</p>
-
-        <!-- Toggle Button for View Counts -->
-        <button id="toggle-view-counts-btn" class="toggle-btn">Toggle View Counts</button>
-
-        <!-- View Counts Section -->
-        <div id="view-counts-section" class="view-counts" style="display: none;">
-            <% if (typeof viewCounts !== 'undefined') { %>
-                <p><strong>Total Views On This Page:</strong> <%= viewCounts.totalViews %></p>
-                <p><strong>Unique Views On This Page:</strong> <%= viewCounts.uniqueViews %></p>
-                <p><strong>Total Views On This WEBSITE:</strong> <%= viewCounts.totalSiteViews %></p>
-                <p><strong>Unique Views On This WEBSITE:</strong> <%= viewCounts.uniqueSiteViews %></p>
-            <% } %>
-        </div>
-    </header>
-
