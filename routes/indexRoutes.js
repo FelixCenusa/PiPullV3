@@ -1109,7 +1109,6 @@ router.post('/:username/uploadProfilePic', function (req, res) {
     if (!req.session.user || req.session.user.username !== username) {
         return res.status(403).send('Unauthorized');
     }
-
     uploadProfilePic(req, res, async function (err) {
         if (err) {
             console.error('Error uploading profile picture:', err);
