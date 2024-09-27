@@ -81,6 +81,11 @@ router.post('/create_user', async (req, res) => {
     username = sanitizeHtml(username);
     email = sanitizeHtml(email);
     password = sanitizeHtml(password);
+    // create filepath /uploads/username
+    const uploadDir = path.join(__dirname, '..', 'uploads', username);
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+    }
     let data = {};
     try {
         data.lastUpdated = fs.readFileSync(path.join(__dirname, '..', 'lastUpdated.md'), 'utf8');
@@ -1081,7 +1086,7 @@ const profilePicStorage = multer.diskStorage({
         let fileOriginalName = file.originalname;
         // delete the file extension from the original name including malicious code
         fileOriginalName = fileOriginalName.replace(ext, '');
-        const filename = username + '_profilePic' + fileOriginalName + ext;
+        const filename = username + '_' + fileOriginalName + ext;
         cb(null, filename);
     }
 });
@@ -1103,36 +1108,63 @@ const uploadProfilePic = multer({
 }).single('profilePic');
 
 // Route to handle profile picture upload
+// Route to handle profile picture upload
 router.post('/:username/uploadProfilePic', function (req, res) {
-    username = sanitizeHtml(req.params.username);
-    // Sanitize inputs to remove any potential HTML/JS
-
+    const username = sanitizeHtml(req.params.username); // Sanitize inputs to remove any potential HTML/JS
 
     // Ensure the user is logged in and is the owner of the profile
     if (!req.session.user || req.session.user.username !== username) {
         return res.status(403).send('Unauthorized');
     }
-    uploadProfilePic(req, res, async function (err) {
-        if (err) {
-            console.error('Error uploading profile picture:', err);
-            return res.status(400).send(err.message);
-        }
 
-        // Update the user's profile picture path in the database
-        try {
-            // get the files name
-            const filename = req.file.filename;
-            console.log("filename FROM PFP", filename);
-            await TimeToMove.updateUserProfilePic(username, filename);
+    // Find the existing profile picture file path in the database
+    TimeToMove.getUserProfilePic(username) // Assuming this function retrieves the user's current profile picture filename from the database
+        .then((oldProfilePic) => {
+            uploadProfilePic(req, res, async function (err) {
+                if (err) {
+                    console.error('Error uploading profile picture:', err);
+                    return res.status(400).send(err.message);
+                }
 
-            // Redirect back to the user's profile
-            res.redirect('/' + username);
-        } catch (error) {
-            console.error('Error updating profile picture in database:', error);
+                // Delete the old profile picture if it exists
+                if (oldProfilePic && oldProfilePic !== 'default-picture.png') { // Ensure you don't delete a default picture
+                    const oldProfilePicPath = path.join(__dirname, '..', 'uploads', username, oldProfilePic);
+
+                    fs.access(oldProfilePicPath, fs.constants.F_OK, (err) => {
+                        if (!err) {
+                            fs.unlink(oldProfilePicPath, (err) => {
+                                if (err) {
+                                    console.error('Error deleting old profile picture:', err);
+                                } else {
+                                    console.log('Old profile picture deleted:', oldProfilePic);
+                                }
+                            });
+                        }
+                    });
+                }
+
+                // Update the user's profile picture path in the database
+                try {
+                    // Get the new file name
+                    const filename = req.file.filename;
+                    console.log("filename FROM PFP", filename);
+
+                    await TimeToMove.updateUserProfilePic(username, filename); // Update the new profile pic in the database
+
+                    // Redirect back to the user's profile
+                    res.redirect('/' + username);
+                } catch (error) {
+                    console.error('Error updating profile picture in database:', error);
+                    res.status(500).send('Server error');
+                }
+            });
+        })
+        .catch((error) => {
+            console.error('Error retrieving old profile picture from database:', error);
             res.status(500).send('Server error');
-        }
-    });
+        });
 });
+
 
 
 

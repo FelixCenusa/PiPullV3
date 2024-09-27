@@ -1041,6 +1041,27 @@ async function updateUserProfilePic(username, filename) {
     }
 }
 
+// Function to retrieve the profile picture from the database
+async function getUserProfilePic(username) {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = 'SELECT UserPFP FROM Users WHERE Username = ?';
+        // Query to get the profile picture filename from the users table
+        const result = await db.query(sql, [username]);
+
+        // console.log('Profile picture result:', result);
+        // console.log('Profile picture result0:', result[0]);
+        // console.log('Profile picture result0UserPFP:', result[0]?.UserPFP);
+
+
+        return result[0]?.UserPFP;
+    } catch (error) {
+        console.error('Error fetching user profile picture:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
 
 async function insertFakeData() {
     const db = await mysql.createConnection(config);
@@ -1200,6 +1221,7 @@ module.exports = {
     resetPassword,
     recordPageView,
     getPageViewCounts,
+    getUserProfilePic,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

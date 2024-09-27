@@ -15,7 +15,7 @@
                      <% if (session.user && session.user.username === user.Username) { %>
                         onclick="triggerProfilePicUpload()"
                      <% } %>
-                     onerror="this.onerror=null; this.src='/uploads/profiles/user-circle.svg';">
+                        onerror="this.onerror=null; this.src='/uploads/profiles/user-circle.svg';">
                 
                 <!-- Hover options: Upload and Delete -->
                 <% if (session.user && session.user.username === user.Username) { %>
