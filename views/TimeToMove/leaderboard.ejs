@@ -44,7 +44,9 @@
                     <td class="user-cell">
                         <a href="/<%= player.Username %>" class="user-link">
                             <img 
-                                src="/uploads/profiles/<%= player.UserPFP ? player.UserPFP : 'user-circle.svg' %>" 
+                                src="/uploads/<%= player.Username %>/<%= player.UserPFP ? player.UserPFP : 'user-circle.svg' %>"
+
+
                                 alt="<%= player.Username %>'s Profile Picture" 
                                 class="profile-picture"
                                 onerror="this.onerror=null; this.src='/uploads/profiles/user-circle.svg';"
