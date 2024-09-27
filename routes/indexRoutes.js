@@ -605,20 +605,24 @@ router.get('/:username/deleteProfilePic', async function (req, res) {
     }
 });
 
-// Route to update box name and description
+// Route to update box name, description, and public/private status
 router.post('/:username/:boxID/editBox', async (req, res) => {
     let { username, boxID } = req.params;
-    let { newBoxName, newBoxDescription } = req.body;
+    let { newBoxName, newBoxDescription, isBoxPublic } = req.body; // Add isBoxPublic to handle the public/private toggle
+
     // Sanitize inputs to remove any potential HTML/JS
     username = sanitizeHtml(username);
     boxID = sanitizeHtml(boxID);
     newBoxName = sanitizeHtml(newBoxName);
     newBoxDescription = sanitizeHtml(newBoxDescription);
+    // Convert isBoxPublic to a boolean
+    isBoxPublic = (isBoxPublic === 'true'); // This will make isBoxPublic a boolean value
+
     try {
         // Ensure the user is logged in and is the owner of the box
         if (req.session.user && req.session.user.username === username) {
-            // Call the function to update the box
-            await TimeToMove.updateBox(boxID, newBoxName, newBoxDescription);
+            // Call the function to update the box with the public/private status
+            await TimeToMove.updateBox(boxID, newBoxName, newBoxDescription, isBoxPublic);
 
             // Redirect back to the profile page
             res.redirect('/' + username);
@@ -630,6 +634,7 @@ router.post('/:username/:boxID/editBox', async (req, res) => {
         res.status(500).send('Server error while updating box.');
     }
 });
+
 
 
 

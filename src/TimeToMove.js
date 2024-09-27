@@ -1002,13 +1002,13 @@ async function updateUserDescription(username, description) {
 
 
 // Function to update box name and description
-async function updateBox(boxID, newBoxName, newBoxDescription) {
+async function updateBox(boxID, newBoxName, newBoxDescription, isPublic) {
     const db = await mysql.createConnection(config);
 
     try {
         const sanitizedDescription = newBoxDescription.slice(0, 4095); // Max length 4095 chars
-        const sql = `UPDATE Boxes SET TitleChosen = ?, BoxDescription = ? WHERE BoxID = ?`;
-        await db.query(sql, [newBoxName, newBoxDescription, boxID]);
+        const sql = `UPDATE Boxes SET TitleChosen = ?, BoxDescription = ?, IsBoxPublic = ? WHERE BoxID = ?`;
+        await db.query(sql, [newBoxName, newBoxDescription, isPublic, boxID]);
         console.log(`Box ${boxID} updated successfully.`);
     } catch (error) {
         console.error('Error updating box:', error);

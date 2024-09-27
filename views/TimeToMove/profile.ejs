@@ -193,7 +193,8 @@
   <!-- Hoverable Edit/Delete/Print buttons, visible only when hovered -->
   <div class="btn-container">
     <% if (session.user && session.user.username === user.Username) { %>
-      <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>', '<%= box.BoxDescription %>')">Edit</button>
+        <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>', '<%= box.BoxDescription %>', <%= box.IsBoxPublic %>)">Edit</button>
+
       <button class="delete-btn" onclick="event.stopPropagation(); openDeleteBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>')">Delete</button>
     <% } %>
     <button class="print-btn" onclick="event.stopPropagation(); printBox(<%= box.BoxID %>)">Print</button>
@@ -232,15 +233,26 @@
         <form id="editBoxForm" method="POST" action="">
             <label for="newBoxName">Box Name:</label>
             <input type="text" id="newBoxName" name="newBoxName" placeholder="Enter new box name" required oninput="sanitizeInput(this)" pattern="[a-zA-Z0-9 _-/]+" title="Only letters, numbers, spaces, underscores, slashes and dashes are allowed.">
-
+        
             <label for="newBoxDescription">Box Description:</label>
             <textarea id="newBoxDescription" name="newBoxDescription" placeholder="Enter box description (max 4095 characters)" maxlength="4095" oninput="sanitizeInput(this)" pattern="[a-zA-Z0-9 _.,!?()-]+" title="Only letters, numbers, spaces, and common punctuation are allowed."></textarea>
             <div id="boxCharCountWrapper">
                 <span id="boxCharCount">0</span>/4095 characters
             </div>
-
+        
+            <!-- Visibility Toggle Block -->
+            <div class="visibility-toggle-container">
+                <label for="isBoxPublic" class="visibility-toggle-label">Visibility:</label>
+                <button type="button" id="visibilityToggleBtn" class="visibility-toggle-btn" onclick="toggleVisibility()">
+                    <!-- This button's text is updated dynamically -->
+                </button>
+                <!-- Hidden input to store the value of isBoxPublic -->
+                <input type="hidden" id="isBoxPublic" name="isBoxPublic" value="">
+            </div>
+        
             <button type="submit">Update</button>
         </form>
+        
     </div>
 </div>
 
@@ -260,6 +272,26 @@
 <%- include('./../partials/footer.ejs') %>
 
 <script>
+
+function toggleVisibility() {
+    const toggleButton = document.getElementById('visibilityToggleBtn');
+    const isPublicInput = document.getElementById('isBoxPublic');
+    
+    if (toggleButton.textContent === 'Public') {
+        toggleButton.textContent = 'Private';
+        isPublicInput.value = 'false'; // Update hidden input to 'false'
+        toggleButton.classList.remove('public');
+        toggleButton.classList.add('private');
+    } else {
+        toggleButton.textContent = 'Public';
+        isPublicInput.value = 'true'; // Update hidden input to 'true'
+        toggleButton.classList.remove('private');
+        toggleButton.classList.add('public');
+    }
+}
+
+
+
 
 // Function to sanitize input by escaping potentially harmful characters
 function sanitizeInput(input) {
@@ -283,19 +315,39 @@ document.querySelector('.create-box-form').addEventListener('submit', function (
 });
 
 // Function to open the edit modal
-function openEditBoxModal(boxID, currentBoxName, currentBoxDescription) {
+function openEditBoxModal(boxID, currentBoxName, currentBoxDescription, isBoxPublic) {
+    // Set the box name and description
     document.getElementById('newBoxName').value = currentBoxName;
-    document.getElementById('newBoxDescription').value = currentBoxDescription || ''; // Set to empty string if null
+    document.getElementById('newBoxDescription').value = currentBoxDescription || '';
+
+    // Set the form action URL
     document.getElementById('editBoxForm').action = '/' + '<%= user.Username %>' + '/' + boxID + '/editBox';
+
+    // Set the visibility button text and hidden input value based on the current state
+    const toggleButton = document.getElementById('visibilityToggleBtn');
+    const isPublicInput = document.getElementById('isBoxPublic');
+    
+    if (isBoxPublic) {
+        toggleButton.textContent = 'Public';
+        isPublicInput.value = 'true'; // Initial state for public box
+        toggleButton.classList.add('public');
+        toggleButton.classList.remove('private');
+    } else {
+        toggleButton.textContent = 'Private';
+        isPublicInput.value = 'false'; // Initial state for private box
+        toggleButton.classList.add('private');
+        toggleButton.classList.remove('public');
+    }
+
+    // Display the modal
     document.getElementById('editBoxModal').style.display = 'block';
 
     // Initialize character count
     updateBoxCharCount();
-
-    // Add event listener for input on box description
-    const textarea = document.getElementById('newBoxDescription');
-    textarea.addEventListener('input', updateBoxCharCount);
 }
+
+
+
 
 // Function to update character count for box description
 function updateBoxCharCount() {
@@ -1447,6 +1499,44 @@ function updateBoxCharCount() {
     color: #333; /* Subtle dark color for the title */
     font-weight: bold; /* Make the title stand out */
 }
+
+/* Visibility Toggle Button Styling */
+.visibility-toggle-container {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.visibility-toggle-label {
+    margin-right: 10px;
+    font-size: 16px;
+    color: #333;
+    font-weight: bold;
+}
+
+.visibility-toggle-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.visibility-toggle-btn.public {
+    background-color: #28a745;
+    color: white;
+}
+
+.visibility-toggle-btn.private {
+    background-color: #dc3545;
+    color: white;
+}
+
+.visibility-toggle-btn:hover {
+    opacity: 0.9;
+}
+
 
 </style>
 
