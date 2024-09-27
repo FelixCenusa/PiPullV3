@@ -44,7 +44,7 @@
     // Password validation: at least 8 characters, upper and lowercase, number, and special character
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const usernameRegex = /^[a-zA-Z0-9_]+$/; // No spaces, no dots, allow underscores
+    const usernameRegex = /^[a-zA-Z0-9_é]+$/; // No spaces, no dots, allow underscores
 
     function validateForm() {
         let valid = true;
