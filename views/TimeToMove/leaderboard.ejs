@@ -16,11 +16,11 @@
     <% } else { %>
         <%= (totalMediaSize / (1024 * 1024)).toFixed(2) %> MB
     <% } %>
-    <i> /53GB</i>
+    <i> / 53 GB</i>
     </p>
     <p>- - - - - - - - - -</p>
     <p><strong>Average Files per User:</strong><%= (totalFilesUploaded / totalUsers).toFixed(2) %></p>
-    <p><strong>Average Media Size per User:</strong> <%= ((totalMediaSize / (1024 * 1024)).toFixed(2) / totalUsers).toFixed(2) %></p>
+    <p><strong>Average Media Size per User:</strong> <%= ((totalMediaSize / (1024 * 1024)).toFixed(2) / totalUsers).toFixed(2) %> MB</p>
     <p><strong>Average Files per MB:</strong> <%= (totalFilesUploaded / (totalMediaSize / (1024 * 1024))).toFixed(2) %></p>
 </div>
 
