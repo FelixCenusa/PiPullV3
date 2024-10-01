@@ -1132,6 +1132,64 @@ async function getUserProfilePic(username) {
     }
 }
 
+// Function to find or create a Google user
+async function findOrCreateGoogleUser(profile) {
+    const db = await mysql.createConnection(config);
+
+    try {
+        const googleId = profile.id;
+        const displayName = profile.displayName;
+        const email = profile.emails[0].value;
+
+        // Check if the user already exists
+        const sql = `SELECT * FROM Users WHERE GoogleId = ?`;
+        let res = await db.query(sql, [googleId]);
+
+        if (res.length > 0) {
+            // User exists
+            return res[0];
+        } else {
+            // Create a new user
+            const insertSql = `INSERT INTO Users (Username, Email, GoogleId) VALUES (?, ?, ?)`;
+            const result = await db.query(insertSql, [displayName, email, googleId]);
+
+            // Fetch the new user
+            const newUserSql = `SELECT * FROM Users WHERE ID = ?`;
+            const newUserRes = await db.query(newUserSql, [result.insertId]);
+
+            return newUserRes[0];
+        }
+    } catch (error) {
+        console.error('Error in findOrCreateGoogleUser:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+// Function to find a user by ID
+async function findUserById(id) {
+    const db = await mysql.createConnection(config);
+
+    try {
+        const sql = `SELECT * FROM Users WHERE ID = ?`;
+        let res = await db.query(sql, [id]);
+
+        if (res.length > 0) {
+            return res[0];
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error('Error in findUserById:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+
+
 async function insertFakeData() {
     const db = await mysql.createConnection(config);
 
@@ -1292,6 +1350,8 @@ module.exports = {
     getPageViewCounts,
     getUserProfilePic,
     deleteUser,
+    findOrCreateGoogleUser,
+    findUserById,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

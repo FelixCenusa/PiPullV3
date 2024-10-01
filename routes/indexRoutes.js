@@ -8,7 +8,23 @@ const fs = require('fs');
 const archiver = require('archiver');
 const QRCode = require('qrcode'); // Using qrcode without canvas
 const sanitizeHtml = require('sanitize-html');
+const passport = require('passport');
 // const ffmpeg = require('fluent-ffmpeg');
+
+
+// Initiate authentication with Google
+router.get('/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+// Handle callback after Google has authenticated the user
+router.get('/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    (req, res) => {
+        // Successful authentication, redirect to profile
+        res.redirect(`/${req.user.Username}`);
+    }
+);
 
 
 // Route for Terms and Conditions

@@ -31,6 +31,17 @@
 
 <p>Don't have an account? <a href="/create_user">Register here</a></p>
 
+<!-- Add Google Login Button -->
+<div>
+    <p>Or login with:</p>
+    <a href="/auth/google" class="google-login-button">
+        <img src="/style/GoogleLoginLogo.png" alt="Google Logo" style="vertical-align: middle;">
+        <!-- Path is gonna fuck up on the pi  -->
+        Login with Google
+    </a>
+</div>
+
+
 <%- include('./../partials/footer.ejs') %>
 
 <script>
@@ -78,3 +89,24 @@
     // Initial validation
     validateLoginForm();
 </script>
+
+<style>
+.google-login-button {
+    display: inline-block;
+    background-color: white; /* Change background to white */
+    color: black; /* Change text color to black */
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 25px; /* Make the button rounded */
+    font-size: 16px;
+    border: 2px solid black; /* Add a black border for contrast */
+}
+
+.google-login-button:hover {
+    background-color: #f0f0f0; /* Slight hover effect with lighter color */
+    text-decoration: none;
+    color: black;
+}
+
+</style>
+    

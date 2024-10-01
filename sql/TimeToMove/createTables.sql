@@ -27,6 +27,7 @@ CREATE TABLE Users (
     UserDescription VARCHAR(4095),-- user description
     Email VARCHAR(255) UNIQUE, -- Ensure unique emails
     PasswordHash VARCHAR(255), -- Salted and hashed password
+    GoogleID VARCHAR(255), -- Google ID for OAuth
     StealthMode BOOLEAN DEFAULT FALSE -- Stealth mode flag
 );
 
