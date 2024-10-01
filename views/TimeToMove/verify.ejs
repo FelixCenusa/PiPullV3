@@ -42,10 +42,12 @@ document.getElementById('verifyForm').addEventListener('submit', async function 
 
         // Show popup based on the result
         if (result.success) {
-            alert(`${result.message}`); // Display success message
+            //alert(`${result.message}`); // Display success message
+            alert('Verification successful! Please log in to continue.');
             window.location.href = '/login'; // Redirect to login page on success
         } else {
-            alert(`${result.message}`);
+            //alert(`${result.message}`);
+            alert('Verification failed. Please try again.');
             window.location.href = '/create_user'; // Redirect to register page on failure
         }
 

@@ -55,6 +55,18 @@
         <% if (session.user && session.user.username === user.Username) { %>
         <h2>Welcome, <%= user.Username %>!</h2>
         <p class="greeting">It's great to see you back. Check out your profile and manage your boxes below.</p>
+        <!-- Add the delete/edit button -->
+        <button class="btn-manage-account" onclick="openAccountManagementModal()">Manage Account</button>
+        <!-- Modal for managing account -->
+        <div id="accountManagementModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeAccountManagementModal()">&times;</span>
+                <h2>Manage Account</h2>
+                <p>You can either edit your username or delete your account.</p>
+                <button class="btn-edit-username" onclick="openEditUsernameForm()">Edit Username</button>
+                <button class="btn-delete-account" onclick="sendDeleteConfirmationEmail()">Delete Account</button>
+            </div>
+        </div>
         <!-- Display the user's description -->
         <div class="user-description" id="description-box" onclick="toggleEditDescription()">
             <h3>About <%= user.Username %>:</h3>
@@ -272,6 +284,34 @@
 <%- include('./../partials/footer.ejs') %>
 
 <script>
+
+function openAccountManagementModal() {
+        document.getElementById('accountManagementModal').style.display = 'block';
+    }
+    
+function closeAccountManagementModal() {
+        document.getElementById('accountManagementModal').style.display = 'none';
+    }
+    
+function openEditUsernameForm() {
+        // Add logic to show a form to edit the username
+    }
+
+function sendDeleteConfirmationEmail() {
+        // Call the route to send confirmation email
+        fetch('/<%= user.Username %>/sendDeleteConfirmation', {
+            method: 'POST'
+        }).then(response => {
+            if (response.ok) {
+                alert('Confirmation email sent. Please check your inbox to confirm account deletion.');
+            } else {
+                alert('Failed to send confirmation email.');
+            }
+        }).catch(err => {
+            console.error('Error sending email:', err);
+        });
+    }
+
 
 function toggleVisibility() {
     const toggleButton = document.getElementById('visibilityToggleBtn');

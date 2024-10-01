@@ -292,11 +292,22 @@ async function verify(token) {
         // Move the user from TempUsers to Users table  // add salt
         const insertSql = `INSERT INTO Users (Username, Email, PasswordHash)
                            VALUES (?, ?, ?)`;
-        await db.query(insertSql, [tempUser.Username, tempUser.Email, tempUser.PasswordHash]);
-        console.log("GOT THIS FAR 1")
-        // Delete the user from TempUsers after verification
+
         await db.query(`DELETE FROM TempUsers WHERE VerificationToken = ?`, [token]);
+        console.log("GOT THIS FAR 1")
+        await db.query(insertSql, [tempUser.Username, tempUser.Email, tempUser.PasswordHash]);
+        // Delete the user from TempUsers after verification
         console.log("GOT THIS FAR 2")
+        // Now send a welcome email to the user
+        const welcomeEmail = {
+            from: process.env.EMAIL_USER,
+            to: tempUser.Email,
+            subject: 'Welcome to TimeToMove!',
+            html: `<h2>Welcome to TimeToMove, ${tempUser.Username}! Glad yo have you on board!</h2>
+                   <p>Your email has been successfully verified.</p>`
+        };
+        console.log("GOT THIS FAR 3")
+
 
         return { success: true, message: 'Your email has been successfully verified!' };
     } catch (error) {
@@ -306,6 +317,60 @@ async function verify(token) {
         await db.end();
     }
 }
+
+// Define the deleteUser function
+async function deleteUser(username) {
+    const db = await mysql.createConnection(config);
+    try {
+        // 1. Check if the user exists
+        const userResult = await db.query(`SELECT ID FROM Users WHERE Username = ?`, [username]);
+        if (userResult.length === 0) {
+            return { success: false, message: 'User not found.' };
+        }
+        const userID = userResult[0].ID;
+
+        // 2. Get the user's boxes
+        const boxes = await db.query(`SELECT BoxID FROM Boxes WHERE UserID = ?`, [userID]);
+
+        // 3. Iterate over each box to delete its media and local storage
+        for (const box of boxes) {
+            const boxID = box.BoxID;
+
+            // Delete media from BoxMedia in the database
+            await db.query(`DELETE FROM BoxMedia WHERE BoxID = ?`, [boxID]);
+
+            // Define the path to the box's folder in local storage
+            const boxPath = path.join(__dirname, 'uploads', username, String(boxID));
+
+            // Recursively delete the box's folder and contents if it exists
+            if (fs.existsSync(boxPath)) {
+                fs.rmSync(boxPath, { recursive: true, force: true });
+            }
+
+            // Delete the box from the Boxes table
+            await db.query(`DELETE FROM Boxes WHERE BoxID = ?`, [boxID]);
+        }
+
+        // 4. After all boxes are deleted, delete the user's folder
+        const userFolderPath = path.join(__dirname, 'uploads', username);
+        if (fs.existsSync(userFolderPath)) {
+            fs.rmSync(userFolderPath, { recursive: true, force: true });
+        }
+
+        // 5. Finally, delete the user from the Users table
+        await db.query(`DELETE FROM Users WHERE ID = ?`, [userID]);
+
+        return { success: true, message: `User '${username}' and all associated data deleted successfully.` };
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+        
+
 
 
 
@@ -1223,6 +1288,7 @@ module.exports = {
     recordPageView,
     getPageViewCounts,
     getUserProfilePic,
+    deleteUser,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,
