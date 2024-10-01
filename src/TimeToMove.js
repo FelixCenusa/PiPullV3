@@ -303,10 +303,13 @@ async function verify(token) {
             from: process.env.EMAIL_USER,
             to: tempUser.Email,
             subject: 'Welcome to TimeToMove!',
-            html: `<h2>Welcome to TimeToMove, ${tempUser.Username}! Glad yo have you on board!</h2>
+            html: `<h2>Welcome to TimeToMove, ${tempUser.Username}!</h2><h3> Glad to have you on board!</h3>
                    <p>Your email has been successfully verified.</p>`
         };
         console.log("GOT THIS FAR 3")
+        await transporter.sendMail(welcomeEmail);
+        console.log("GOT THIS FAR 4")
+
 
 
         return { success: true, message: 'Your email has been successfully verified!' };
