@@ -22,6 +22,17 @@ router.get('/terms', async (req, res) => {
     res.render('TimeToMove/terms',{ session: req.session, viewCounts });
 });
 
+// Route for Privacy Policy
+router.get('/privacyPolicy', async (req, res) => {
+    // Record the page view
+    await TimeToMove.recordPageView(req, '/privacyPolicy');
+    // Retrieve the view counts
+    const viewCounts = await TimeToMove.getPageViewCounts('/privacyPolicy');
+    // Render the page and pass the view counts
+    res.render('TimeToMove/privacyPolicy', { session: req.session, viewCounts });
+});
+
+
 // Route for Contact Us
 router.get('/contact', async(req, res) => {
     // Record the page view
