@@ -14,6 +14,15 @@ needs to be run manually and directly on the raspberry pi for the server to work
     sudo mariadb -u root -p  (use mariaDB password after)
     use TimeToMove;
  // ALTER TABLE Users ADD GoogleID VARCHAR(255);
+ CREATE TABLE Tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    Content VARCHAR(255) NOT NULL,
+    Status VARCHAR(50) NOT NULL,
+    Created_by VARCHAR(100) NOT NULL,
+    Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Moved_at TIMESTAMP,
+    Moved_by VARCHAR(100)
+);
 
 
     .env update with actual variables.
