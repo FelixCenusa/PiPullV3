@@ -390,6 +390,12 @@ function getTimeAgo(date) {
         padding: 2px 5px;
         cursor: pointer;
         z-index: 4;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .task:hover .delete-task {
+        opacity: 1;
     }
 
     .delete-task:hover {
