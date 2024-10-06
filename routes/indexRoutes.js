@@ -66,7 +66,11 @@ router.post('/update-task-status', async (req, res) => {
     const { taskId, newStatus } = req.body;
     const updatedBy = req.session.user.username;
     try {
-        const success = await TimeToMove.updateTaskStatus(taskId, newStatus, updatedBy);
+        const sanitizedStatus = sanitizeHtml(newStatus, {
+            allowedTags: [],
+            allowedAttributes: {}
+        });
+        const success = await TimeToMove.updateTaskStatus(taskId, sanitizedStatus, updatedBy);
         if (success) {
             res.json({ success: true });
         } else {
@@ -89,7 +93,13 @@ router.post('/add-task', async (req, res) => {
     console.log("createdBy", createdBy);
 
     try {
-        const taskId = await TimeToMove.addTask(content, createdBy);
+        const sanitizedContent = sanitizeHtml(content, {
+            allowedTags: ['b', 'i', 'em', 'strong', 'a'],
+            allowedAttributes: {
+                'a': ['href']
+            }
+        });
+        const taskId = await TimeToMove.addTask(sanitizedContent, createdBy);
         res.json({ success: true, taskId });
     } catch (error) {
         console.error('Error adding task:', error);
