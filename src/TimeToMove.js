@@ -1400,38 +1400,32 @@ const countLines = () => {
     let rootDirectory = __dirname;
     let totalLines = 0;
 
-    // Find the PiPullV3 directory
-    while (path.basename(rootDirectory) !== 'PiPullV3' && rootDirectory !== '/') {
+    // Find the config directory
+    while (!fs.existsSync(path.join(rootDirectory, 'config')) && rootDirectory !== '/') {
         rootDirectory = path.dirname(rootDirectory);
     }
 
     if (rootDirectory === '/') {
-        console.error('PiPullV3 directory not found');
+        console.error('Config directory not found');
         return 0;
     }
 
     const readDirectory = (dir, isWhitelisted = false) => {
         const files = fs.readdirSync(dir);
-        // console.log("Reading directory:", dir);
-        // console.log("Files in directory:", files);
         files.forEach((file) => {
             const filePath = path.join(dir, file);
             const stats = fs.statSync(filePath);
-            // console.log("File path:", filePath);
 
             if (stats.isDirectory()) {
                 if (isWhitelisted || whitelist.includes(file)) {
-                    // console.log("Reading directory:", filePath);
                     readDirectory(filePath, true);
                 }
             } else if (stats.isFile()) {
                 const ext = path.extname(file);
-                // console.log("File extension:", ext);
                 if (['.js', '.ejs', '.html', '.css', '.ts'].includes(ext)) { // Adjust extensions as needed
                     if (isWhitelisted || whitelist.includes(file) || whitelist.includes(path.basename(dir))) {
                         const lines = fs.readFileSync(filePath, 'utf-8').split('\n').length;
                         totalLines += lines;
-                        // console.log("Total lines:", totalLines);
                     }
                 }
             }
