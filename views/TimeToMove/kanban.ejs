@@ -1,0 +1,400 @@
+<%- include('../partials/header') %>
+<% if (isAdmin) { %>
+    <div class="admin-status">
+        <p>You are currently logged in as an admin.</p>
+        <p> Only admins can delete or move tasks.</p>
+    </div>
+<% } else if (session.user) { %>
+    <div class="user-status">
+        <p>You are currently logged in as a regular user.</p>
+        <p> You can add tasks, but you cannot delete or move tasks.</p>
+    </div>
+<% } else { %>
+    <div class="guest-status">
+        <p>You are currently browsing as a guest.</p>
+        <p> Login to make changes.</p>
+        <a href="/login">Login</a>
+    </div>
+<% } %>
+
+<%
+function getTimeAgo(date) {
+    const now = new Date();
+    const diff = now - new Date(date);
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return 'Just now';
+}
+%>
+
+<div class="kanban-container">
+    <div class="kanban-column" id="suggestions">
+        <h2>Suggestions</h2>
+        <div class="task-list" id="suggestions-list">
+            <!-- Suggestions will be dynamically added here -->
+            <% tasks.forEach(task => { %>
+                <% if (task.Status === 'suggestions') { %>
+                    <div class="task" data-task-id="<%= task.id %>" draggable="true">
+                        <span class="task-content"><%= task.Content %></span>
+                        <div class="task-info">
+                            <small class="task-created-by">Created by: <%= task.Created_by %></small><br>
+                            <small class="task-created-at">Created: <%= getTimeAgo(task.Created_at) %></small><br>
+                            <small class="task-moved-last">Last Moved: <%= task.Moved_at ? getTimeAgo(task.Moved_at) : 'N/A' %></small>
+                        </div>
+                        <% if (isAdmin) { %>
+                            <button class="delete-task" data-task-id="<%= task.id %>">Delete</button>
+                        <% } %>
+                    </div>
+                <% } %>
+            <% }); %>
+        </div>
+    </div>
+
+    <div class="kanban-column" id="todo">
+        <h2>To Do</h2>
+        <div class="task-list" id="todo-list">
+            <!-- To Do tasks will be dynamically added here -->
+            <% tasks.forEach(task => { %>
+                <% if (task.Status === 'todo') { %>
+                    <div class="task" data-task-id="<%= task.id %>" draggable="true">
+                        <span class="task-content"><%= task.Content %></span>
+                        <div class="task-info">
+                            <small class="task-created-by">Created by: <%= task.Created_by %></small><br>
+                            <small class="task-created-at">Created: <%= getTimeAgo(task.Created_at) %></small><br>
+                            <small class="task-moved-last">Last Moved: <%= task.Moved_at ? getTimeAgo(task.Moved_at) : 'N/A' %></small>
+                        </div>
+                        <% if (isAdmin) { %>
+                            <button class="delete-task" data-task-id="<%= task.id %>">Delete</button>
+                        <% } %>
+                    </div>
+                <% } %>
+            <% }); %>
+        </div>
+    </div>
+
+    <div class="kanban-column" id="in-progress">
+        <h2>In Progress</h2>
+        <div class="task-list" id="in-progress-list">
+            <!-- In Progress tasks will be dynamically added here -->
+            <% tasks.forEach(task => { %>
+                <% if (task.Status === 'in-progress') { %>
+                    <div class="task" data-task-id="<%= task.id %>" draggable="true">
+                        <span class="task-content"><%= task.Content %></span>
+                        <div class="task-info">
+                            <small class="task-created-by">Created by: <%= task.Created_by %></small><br>
+                            <small class="task-created-at">Created: <%= getTimeAgo(task.Created_at) %></small><br>
+                            <small class="task-moved-last">Last Moved: <%= task.Moved_at ? getTimeAgo(task.Moved_at) : 'N/A' %></small>
+                        </div>
+                        <% if (isAdmin) { %>
+                            <button class="delete-task" data-task-id="<%= task.id %>">Delete</button>
+                        <% } %>
+                    </div>
+                <% } %>
+            <% }); %>
+        </div>
+    </div>
+
+    <div class="kanban-column" id="completed">
+        <h2>Completed</h2>
+        <div class="task-list" id="completed-list">
+            <!-- Completed tasks will be dynamically added here -->
+            <% tasks.forEach(task => { %>
+                <% if (task.Status === 'completed') { %>
+                    <div class="task" data-task-id="<%= task.id %>" draggable="true">
+                        <span class="task-content"><%= task.Content %></span>
+                        <div class="task-info">
+                            <small class="task-created-by">Created by: <%= task.Created_by %></small><br>
+                            <small class="task-created-at">Created: <%= getTimeAgo(task.Created_at) %></small><br>
+                            <small class="task-moved-last">Last Moved: <%= task.Moved_at ? getTimeAgo(task.Moved_at) : 'N/A' %></small>
+                        </div>
+                        <% if (isAdmin) { %>
+                            <button class="delete-task" data-task-id="<%= task.id %>">Delete</button>
+                        <% } %>
+                    </div>
+                <% } %>
+            <% }); %>
+        </div>
+    </div>
+</div>
+
+<% if (session.user) { %>
+    <form id="add-task-form">
+        <input type="text" id="task-content" placeholder="Add a new task" required>
+        <button type="submit">Add Task</button>
+    </form>
+<% } %>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const isAdmin = <%= isAdmin %>;
+        const columns = ['suggestions', 'todo', 'in-progress', 'completed'];
+        const lists = columns.map(id => document.getElementById(`${id}-list`));
+
+        // Initialize dragula for all users
+        const drake = dragula(lists);
+
+        drake.on('drop', function(el, target, source, sibling) {
+            const taskId = el.dataset.taskId;
+            const newStatus = target.id.replace('-list', '')
+            
+            // Send AJAX request to update task status
+            fetch('/update-task-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ taskId, newStatus }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`Task ${taskId} moved to ${newStatus}`);
+                    // Update the moved_at time
+                    const movedAtElement = el.querySelector('.task-moved-last');
+                    if (movedAtElement) {
+                        movedAtElement.textContent = `Last Moved: ${new Date().toLocaleString()}`;
+                    }
+                } else {
+                    console.error('Failed to update task status');
+                    // Move the task back to its original position
+                    drake.cancel(true);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Move the task back to its original position
+                drake.cancel(true);
+            });
+        });
+
+        // Function to format date
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleString();
+        }
+
+        // Function to add a new task
+        function addTask(content, status) {
+            fetch('/add-task', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content, status }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`New task added with ID: ${data.taskId}`);
+                    fetchTasks(); // Refresh the task list
+                } else {
+                    console.error('Failed to add new task');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Function to delete a task
+        function deleteTask(taskId) {
+            fetch('/delete-task', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ taskId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`Task ${taskId} deleted`);
+                    fetchTasks(); // Refresh the task list
+                } else {
+                    console.error('Failed to delete task');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Update fetchTasks function
+        function fetchTasks() {
+            fetch('/get-tasks')
+                .then(response => response.json())
+                .then(tasks => {
+                    for (const [status, taskList] of Object.entries(tasks)) {
+                        const listElement = document.getElementById(`${status}-list`);
+                        listElement.innerHTML = ''; // Clear existing tasks
+                        taskList.forEach(task => {
+                            const taskElement = document.createElement('div');
+                            taskElement.className = 'task';
+                            taskElement.dataset.taskId = task.id;
+                            taskElement.draggable = true;
+                            taskElement.innerHTML = `
+                                <div class="task-content">${task.Content}</div>
+                                <div class="task-info">
+                                    <small class="task-created-by">Created by: ${task.Created_by}</small>
+                                    <small class="task-created-at">Created: ${formatDate(task.Created_at)}</small>
+                                    <small class="task-moved-last">Last Moved: ${task.Moved_at ? formatDate(task.Moved_at) : 'N/A'}</small>
+                                </div>
+                                ${isAdmin ? `<button class="delete-task" data-task-id="${task.id}">Delete</button>` : ''}
+                            `;
+                            listElement.appendChild(taskElement);
+
+                            // Add event listener for delete button
+                            if (isAdmin) {
+                                const deleteButton = taskElement.querySelector('.delete-task');
+                                deleteButton.addEventListener('click', function(e) {
+                                    e.stopPropagation(); // Prevent event from bubbling up to parent elements
+                                    const taskId = this.dataset.taskId;
+                                    deleteTask(taskId);
+                                });
+                            }
+                        });
+                    }
+                    // Refresh dragula containers
+                    drake.containers = lists;
+                })
+                .catch(error => console.error('Error fetching tasks:', error));
+        }
+
+        // Add event listener for the add task form
+        document.getElementById('add-task-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const content = document.getElementById('task-content').value;
+            if (content) {
+                addTask(content, 'suggestions'); // Add new tasks to the 'suggestions' column by default
+                document.getElementById('task-content').value = ''; // Clear the input
+            }
+        });
+
+        // Add event listener for delete buttons
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.classList.contains('delete-task')) {
+                e.preventDefault();
+                const taskId = e.target.dataset.taskId;
+                deleteTask(taskId);
+            }
+        });
+
+        fetchTasks();
+    });
+</script>
+
+<style>
+    .kanban-container {
+        display: flex;
+        justify-content: space-around;
+        padding: 20px;
+        overflow-x: auto;
+    }
+
+    .kanban-column {
+        background-color: #f4f4f4;
+        border-radius: 5px;
+        width: 250px;
+        padding: 10px;
+        margin: 0 10px;
+        overflow: visible;
+        position: relative;
+        padding-bottom: 50px; /* Add some padding at the bottom */
+    }
+
+    .task-list {
+        min-height: 100px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .task {
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 10px;
+        margin-bottom: 10px;
+        cursor: move;
+        position: relative;
+        overflow: visible;
+        transition: all 0.3s ease;
+        z-index: 2;
+    }
+
+    .task:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        z-index: 3;
+    }
+
+    .task-info {
+        visibility: hidden;
+        opacity: 0;
+        background-color: rgba(0, 0, 0, 0.9);
+        color: white;
+        position: absolute;
+        left: 0;
+        right: 0;
+        padding: 10px;
+        font-size: 0.9em;
+        border-radius: 3px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transition: visibility 0s, opacity 0.3s linear;
+        z-index: 10;
+        width: 100%;
+        min-width: 200px;
+    }
+
+    .task:not(:first-child) .task-info {
+        bottom: 100%;
+    }
+
+    .task:first-child .task-info {
+        top: 100%;
+    }
+
+    .task:hover .task-info {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    #add-task-form {
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    #task-content {
+        width: 300px;
+        padding: 5px;
+        margin-right: 10px;
+    }
+
+    #add-task-form button {
+        padding: 5px 10px;
+    }
+
+    .delete-task {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background-color: #ff4d4d;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        padding: 2px 5px;
+        cursor: pointer;
+        z-index: 4;
+    }
+
+    .delete-task:hover {
+        background-color: #ff1a1a;
+    }
+</style>
+
+<%- include('../partials/footer') %>

@@ -1,4 +1,3 @@
-
 const express = require("express");
 const TimeToMove = require("../src/TimeToMove.js");
 const multer = require('multer');
@@ -9,8 +8,94 @@ const archiver = require('archiver');
 const QRCode = require('qrcode'); // Using qrcode without canvas
 const sanitizeHtml = require('sanitize-html');
 const passport = require('passport');
-// const ffmpeg = require('fluent-ffmpeg');
 
+// add a route for the kanban board
+router.get('/kanban', async (req, res) => {
+    // Record the page view
+    await TimeToMove.recordPageView(req, '/kanban');
+    // Retrieve the view counts
+    const viewCounts = await TimeToMove.getPageViewCounts('/kanban');
+    // Check if the user is an admin
+    let isAdmin = false;
+    if (req.session.user) {
+        isAdmin = await TimeToMove.isUserAdmin(req.session.user.username);
+    }
+    console.log("isAdmin", isAdmin);
+    // Render the page and pass the view counts and admin status
+    const tasks = await TimeToMove.getAllTasks();
+    res.render('TimeToMove/kanban', { 
+        session: req.session, 
+        viewCounts,
+        isAdmin,
+        tasks
+    });
+});
+
+router.post('/delete-task', async (req, res) => {
+    // Check if the user is logged in and is an admin
+    if (!req.session.user || !(await TimeToMove.isUserAdmin(req.session.user.username))) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const { taskId } = req.body;
+    try {
+        const success = await TimeToMove.deleteTask(taskId);
+        if (success) {
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ error: 'Task not found or could not be deleted' });
+        }
+    } catch (error) {
+        console.error('Error deleting task:', error);
+        res.status(500).json({ error: 'Failed to delete task' });
+    }
+});
+
+
+router.get('/get-tasks', async (req, res) => {
+    const tasks = await TimeToMove.getAllTasks();
+    res.json(tasks[0]);
+});
+
+router.post('/update-task-status', async (req, res) => {
+    // Check if the user is logged in and is an admin
+    if (!req.session.user || !(await TimeToMove.isUserAdmin(req.session.user.username))) {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const { taskId, newStatus } = req.body;
+    const updatedBy = req.session.user.username;
+    try {
+        const success = await TimeToMove.updateTaskStatus(taskId, newStatus, updatedBy);
+        if (success) {
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ error: 'Task not found or status not updated' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update task status' });
+    }
+});
+
+router.post('/add-task', async (req, res) => {
+    if (!req.session.user) {
+        return res.status(403).json({ error: 'Login to add a task' });
+    }
+
+    const { content } = req.body;
+    const createdBy = req.session.user.username;
+    console.log("content", content);
+    console.log("createdBy", createdBy);
+
+    try {
+        const taskId = await TimeToMove.addTask(content, createdBy);
+        res.json({ success: true, taskId });
+    } catch (error) {
+        console.error('Error adding task:', error);
+        res.status(500).json({ error: 'Failed to add task' });
+    }
+});
 
 // Initiate authentication with Google
 router.get('/auth/google',
@@ -463,7 +548,8 @@ router.post('/upload_label_style', function (req, res) {
 
 
 
-router.get('/leaderboard', async (req, res) => { 
+router.get('/leaderboard', async (req, res) => 
+{ 
     try {
         // Fetch the leaderboard data and statistics from TimeToMove.js
         const { leaderboard, totalFilesUploaded, totalMediaSize, totalUsers } = await TimeToMove.getLeaderboardStats();
@@ -1195,6 +1281,12 @@ router.post('/:username/uploadProfilePic', function (req, res) {
             res.status(500).send('Server error');
         });
 });
+
+
+
+
+
+
 
 
 

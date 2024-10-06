@@ -9,7 +9,16 @@ DROP TABLE IF EXISTS Users;
 DROP TABLE IF EXISTS TempUsers;
 DROP TABLE IF EXISTS PasswordResets;
 DROP TABLE IF EXISTS Views;
-
+DROP TABLE IF EXISTS Tasks;
+CREATE TABLE Tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    Content VARCHAR(255) NOT NULL,
+    Status VARCHAR(50) NOT NULL,
+    Created_by VARCHAR(100) NOT NULL,
+    Created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Moved_at TIMESTAMP,
+    Moved_by VARCHAR(100)
+);
 
 CREATE TABLE TempUsers (
     TempUserID INT AUTO_INCREMENT PRIMARY KEY,
@@ -29,7 +38,8 @@ CREATE TABLE Users (
     Email VARCHAR(255) UNIQUE, -- Ensure unique emails
     PasswordHash VARCHAR(255), -- Salted and hashed password
     GoogleID VARCHAR(255), -- Google ID for OAuth
-    StealthMode BOOLEAN DEFAULT FALSE -- Stealth mode flag
+    StealthMode BOOLEAN DEFAULT FALSE, -- Stealth mode flag
+    IsAdmin BOOLEAN DEFAULT FALSE -- Admin flag
 );
 
 CREATE TABLE Boxes (

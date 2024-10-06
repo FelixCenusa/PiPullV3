@@ -32,7 +32,7 @@ async function sendVerificationEmail(toEmail, token) {
                <a href="${verificationLink}">Verify Email</a>
                <p>The link is valid for 24 hours.</p>
                <p>Or copy and paste the following digits into the TimeToMove website:</p>
-               <h1>${token}</h1>
+               <h1>${token.slice(0, 3)} ${token.slice(3, 6)} ${token.slice(6, 9)}</h1>
                <p>If you didn't request this email, you can safely ignore it.</p>`
     };
 
@@ -1256,7 +1256,7 @@ async function insertFakeData() {
 }
 
 // Call the function to insert the fake data
-//insertFakeData();
+// insertFakeData();
 
 
 
@@ -1316,6 +1316,82 @@ async function getPageViewCounts(pageViewed) {
     }
 }
 
+async function isUserAdmin(username) {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = `SELECT IsAdmin FROM Users WHERE Username = ?`;
+        const [result] = await db.query(sql, [username]);
+        
+        if (result && result.IsAdmin) {
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Error checking if user is admin:', error);
+        return false;
+    } finally {
+        await db.end();
+    }
+}
+
+async function getAllTasks() {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = `SELECT * FROM Tasks ORDER BY Created_at DESC`;
+        const tasks = await db.query(sql);
+        return tasks;
+    } catch (error) {
+        console.error('Error fetching all tasks:', error);
+        return [];
+    } finally {
+        await db.end();
+    }
+}
+
+async function updateTaskStatus(taskId, newStatus, updatedBy) {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = `UPDATE Tasks SET Status = ?, Moved_at = NOW(), Moved_by = ? WHERE id = ?`;
+        const result = await db.query(sql, [newStatus, updatedBy, taskId]);
+        return result.affectedRows;
+    } catch (error) {
+        console.error('Error updating task status:', error);
+        return false;
+    } finally {
+        await db.end();
+    }
+}
+
+async function addTask(content, createdBy) {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = `INSERT INTO Tasks (Content, Status, Created_by) VALUES (?, ?, ?)`;
+        const result = await db.query(sql, [content, "suggestions", createdBy]);
+        console.log(`New task added with ID: ${result.insertId}`);
+        return result.insertId;
+    } catch (error) {
+        console.error('Error adding new task:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+async function deleteTask(taskId) {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = `DELETE FROM Tasks WHERE id = ?`;
+        const result = await db.query(sql, [taskId]);
+        return result.affectedRows > 0;
+    } catch (error) {
+        console.error('Error deleting task:', error);
+        return false;
+    } finally {
+        await db.end();
+    }
+}
+
+
 
 
 
@@ -1352,6 +1428,11 @@ module.exports = {
     deleteUser,
     findOrCreateGoogleUser,
     findUserById,
+    isUserAdmin,
+    getAllTasks,
+    updateTaskStatus,
+    addTask,
+    deleteTask,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,
