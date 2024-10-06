@@ -1446,6 +1446,7 @@ const countLines = () => {
 
     console.log(`Total lines of code: ${totalLines}`);
     return totalLines;
+    
 };
 
 
