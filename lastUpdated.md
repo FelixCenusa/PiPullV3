@@ -1,1 +1,1 @@
---This text should be replaced by the timestamp automatically--
+--This text should be replaced by the timestamp automatically if you refresh the page--
