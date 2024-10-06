@@ -558,17 +558,17 @@ router.post('/upload_label_style', function (req, res) {
 
 
 
-router.get('/leaderboard', async (req, res) => 
-{ 
+router.get('/leaderboard', async (req, res) => { 
     try {
         // Fetch the leaderboard data and statistics from TimeToMove.js
-        const { leaderboard, totalFilesUploaded, totalMediaSize, totalUsers } = await TimeToMove.getLeaderboardStats();
-            // Record the page view
+        const { leaderboard, totalFilesUploaded, totalMediaSize, totalUsers, totalLinesOfCode } = await TimeToMove.getLeaderboardStats();
+
+        // Record the page view
         await TimeToMove.recordPageView(req, '/leaderboard');
+
         // Retrieve the view counts
         const viewCounts = await TimeToMove.getPageViewCounts('/leaderboard');
-        // Render the page and pass the view counts
-        // async         viewCounts
+
         // Render the leaderboard page with the fetched stats
         res.render('TimeToMove/leaderboard', { 
             user: req.session.user,
@@ -577,13 +577,15 @@ router.get('/leaderboard', async (req, res) =>
             totalFilesUploaded,
             totalMediaSize,
             totalUsers,
-            viewCounts
+            viewCounts,
+            totalLinesOfCode  // Add this to pass to the view
         });
     } catch (error) {
         console.error('Error loading leaderboard:', error);
         res.status(500).send('Error loading leaderboard.');
     }
 });
+
 
 
 

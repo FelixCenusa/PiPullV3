@@ -925,12 +925,14 @@ async function getLeaderboardStats() {
         // Get total number of users
         const totalUsersResult = await db.query('SELECT COUNT(*) AS totalUsers FROM Users');
         const totalUsers = totalUsersResult[0].totalUsers || 0;
+        const totalLinesOfCode = countLines();
 
         return {
             leaderboard,
             totalFilesUploaded,
             totalMediaSize,
             totalUsers,
+            totalLinesOfCode
         };
     } catch (err) {
         console.error('Error fetching leaderboard stats:', err);
@@ -1391,6 +1393,66 @@ async function deleteTask(taskId) {
     }
 }
 
+// Function to count lines of code in whitelisted folders and files
+const countLines = () => {
+    // whitelist is all the folders that this function should count
+    const whitelist = ['src', 'views', 'routes', 'public', 'index.js', 'sql']; // Add folders that you want to whitelist
+    let rootDirectory = __dirname;
+    let totalLines = 0;
+
+    // Find the PiPullV3 directory
+    while (path.basename(rootDirectory) !== 'PiPullV3' && rootDirectory !== '/') {
+        rootDirectory = path.dirname(rootDirectory);
+    }
+
+    if (rootDirectory === '/') {
+        console.error('PiPullV3 directory not found');
+        return 0;
+    }
+
+    const readDirectory = (dir, isWhitelisted = false) => {
+        const files = fs.readdirSync(dir);
+        // console.log("Reading directory:", dir);
+        // console.log("Files in directory:", files);
+        files.forEach((file) => {
+            const filePath = path.join(dir, file);
+            const stats = fs.statSync(filePath);
+            // console.log("File path:", filePath);
+
+            if (stats.isDirectory()) {
+                if (isWhitelisted || whitelist.includes(file)) {
+                    // console.log("Reading directory:", filePath);
+                    readDirectory(filePath, true);
+                }
+            } else if (stats.isFile()) {
+                const ext = path.extname(file);
+                // console.log("File extension:", ext);
+                if (['.js', '.ejs', '.html', '.css', '.ts'].includes(ext)) { // Adjust extensions as needed
+                    if (isWhitelisted || whitelist.includes(file) || whitelist.includes(path.basename(dir))) {
+                        const lines = fs.readFileSync(filePath, 'utf-8').split('\n').length;
+                        totalLines += lines;
+                        // console.log("Total lines:", totalLines);
+                    }
+                }
+            }
+        });
+    };
+  
+    whitelist.forEach(item => {
+        const itemPath = path.join(rootDirectory, item);
+        if (fs.existsSync(itemPath)) {
+            if (fs.statSync(itemPath).isDirectory()) {
+                readDirectory(itemPath, true);
+            } else {
+                const lines = fs.readFileSync(itemPath, 'utf-8').split('\n').length;
+                totalLines += lines;
+            }
+        }
+    });
+
+    console.log(`Total lines of code: ${totalLines}`);
+    return totalLines;
+};
 
 
 
@@ -1433,6 +1495,7 @@ module.exports = {
     updateTaskStatus,
     addTask,
     deleteTask,
+    countLines,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

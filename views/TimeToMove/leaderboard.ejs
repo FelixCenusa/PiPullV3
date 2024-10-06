@@ -22,6 +22,9 @@
     <p><strong>Average Files per User:</strong><%= (totalFilesUploaded / totalUsers).toFixed(2) %></p>
     <p><strong>Average Media Size per User:</strong> <%= ((totalMediaSize / (1024 * 1024)).toFixed(2) / totalUsers).toFixed(2) %> MB</p>
     <p><strong>Average Files per MB:</strong> <%= (totalFilesUploaded / (totalMediaSize / (1024 * 1024))).toFixed(2) %></p>
+    <p>- - - - - - - - - -</p>
+    <p class="total-lines"><strong>Total Lines of Code:</strong> <%= totalLinesOfCode %></p>
+    
 </div>
 
 
@@ -335,6 +338,17 @@ window.onload = function() {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
+}
+
+/* Specific styling for the Total Lines of Code text */
+.leaderboard-stats .total-lines {
+    font-size: 24px; /* Increased font size */
+    margin: 16px 0; /* Increased margin for better spacing */
+    background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: rainbow-text 5s ease infinite;
+    background-size: 300%;
 }
 
 </style>
