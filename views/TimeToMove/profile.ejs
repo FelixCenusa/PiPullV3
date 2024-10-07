@@ -6,8 +6,6 @@
     <div class="profile-picture-container">
         <% if (user.UserPFP) { %>
             <div class="profile-picture-wrapper">
-                <% console.log(user.Username); %>
-                <% console.log("user.Username In Profile"); %>
                 <img src="/uploads/<%= user.Username %>/<%= user.UserPFP %>"
  
                      alt="<%= user.Username %>'s Profile Picture" 

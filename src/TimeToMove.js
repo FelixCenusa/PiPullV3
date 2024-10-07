@@ -487,8 +487,6 @@ async function loginUser(username, password) {
 }
 
 async function loginUserWithGoogle(email, googleId) {
-    console.log("loginUserWithGoogle email:", email);
-    console.log("loginUserWithGoogle googleId:", googleId);
     const db = await mysql.createConnection(config);
 
     try {
@@ -500,7 +498,6 @@ async function loginUserWithGoogle(email, googleId) {
             console.error('User does not exist:', email, googleId);
             return { success: false, message: 'User does not exist' };
         }
-        console.log("Rows loginUserWithGoogle:", rows);
         const user = rows; // Get the first user from the result
 
         // Check if user object and its properties exist
@@ -509,7 +506,6 @@ async function loginUserWithGoogle(email, googleId) {
             return { success: false, message: 'Invalid user data' };
         }
 
-        console.log('User found:', user);
 
         // Return the user's ID and username on successful login
         return {
@@ -1267,7 +1263,6 @@ async function downloadAndSaveProfilePicture(userId, url) {
        try {
            const sql = `SELECT * FROM Users WHERE Email = ?`;
            const [rows] = await db.query(sql, [email]);
-           console.log('Rows findUserByEmail:', rows);
            return rows;
        } catch (error) {
            console.error('Error during findUserByEmail:', error);
@@ -1308,8 +1303,6 @@ async function findUserById(id) {
     try {
         const sql = `SELECT * FROM Users WHERE ID = ?`;
         let res = await db.query(sql, [id]);
-        console.log("Rows findUserById:", res);
-        console.log("Rows findUserById 0:", res[0]);
 
         if (res.length > 0) {
             return res[0];
