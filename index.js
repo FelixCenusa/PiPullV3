@@ -3,6 +3,8 @@ const express = require("express");
 const session = require('express-session');
 const passport = require('passport');
 require('dotenv').config(); // To use environment variables
+// Require passport configuration
+require('./passportConfig');
 
 const app = express();
 const indexRoutes = require("./routes/indexRoutes.js");
@@ -34,8 +36,6 @@ app.use((req, res, next) =>{
     console.log(`${new Date().toLocaleString()} Got a request on ${req.path}(${req.method})`);
     next();
 });
-// Require passport configuration
-require('./passportConfig');
 
 app.use(indexRoutes);
 

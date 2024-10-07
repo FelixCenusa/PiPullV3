@@ -46,7 +46,7 @@
         <!-- Hidden form for uploading profile picture -->
         <% if (session.user && session.user.username === user.Username) { %>
             <form id="profilePicForm" action="/<%= user.Username %>/uploadProfilePic" method="POST" enctype="multipart/form-data" style="display: none;">
-                <input type="file" id="profilePicInput" name="profilePic" accept="image/*" onchange="submitProfilePicForm()">
+                <input type="file" id="profilePicInput" name="profilePic" accept="image/jpeg, image/png, image/gif" onchange="submitProfilePicForm()">
             </form>
         <% } %>
     </div>

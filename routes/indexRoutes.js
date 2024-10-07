@@ -107,17 +107,43 @@ router.post('/add-task', async (req, res) => {
     }
 });
 
+// // Initiate authentication with Google
+// router.get('/auth/google',
+//     passport.authenticate('google', { scope: ['profile', 'email'] })
+// );
+
 // Initiate authentication with Google
 router.get('/auth/google',
-    passport.authenticate('google', { scope: ['profile', 'email'] })
+    passport.authenticate('google', {
+        scope: ['profile', 'email']
+        //,prompt: 'select_account' // Add this line to prompt account selection
+    })
 );
 
 // Handle callback after Google has authenticated the user
 router.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res) => {
-        // Successful authentication, redirect to profile
-        res.redirect(`/${req.user.Username}`);
+        // Successful authentication, set up session and redirect to profile
+        console.log("req.user google callback", req.user);
+        if (req.user && req.user.username) {
+            // Store user information in session
+            req.session.user = {
+                id: req.user.id,
+                username: req.user.username
+            };
+            // Save the session
+            req.session.save((err) => {
+                if (err) {
+                    console.error('Error saving session:', err);
+                    return res.redirect('/login');
+                }
+                res.redirect(`/${req.user.username}`);
+            });
+        } else {
+            console.error('User object does not have a username:', req.user);
+            res.redirect('/login'); // Redirect to login or an error page
+        }
     }
 );
 

@@ -1,5 +1,6 @@
 "use strict";
 const mysql = require("promise-mysql");
+const axios = require('axios');
 const config = require("../config/db/TimeToMove.json");
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -233,6 +234,12 @@ async function createUser(username, email, password) {
         const sql = `INSERT INTO TempUsers (Username, Email, PasswordHash, VerificationToken)
                      VALUES (?, ?, ?, ?)`;
         await db.query(sql, [username, email, hashedPassword, token]);
+
+        // Create user directory
+        const rootDir = path.resolve(__dirname, '..');
+        const userDir = path.join(rootDir, 'uploads', username);
+        fs.mkdirSync(userDir, { recursive: true });
+        console.log("User directory created:", userDir);
 
         // Send verification email
         await sendVerificationEmail(email, token);
@@ -479,7 +486,44 @@ async function loginUser(username, password) {
     }
 }
 
+async function loginUserWithGoogle(email, googleId) {
+    console.log("loginUserWithGoogle email:", email);
+    console.log("loginUserWithGoogle googleId:", googleId);
+    const db = await mysql.createConnection(config);
 
+    try {
+        // Check if the user exists by email or Google ID
+        const sql = `SELECT ID, Username, GoogleID FROM Users WHERE Email = ? OR GoogleID = ?`;
+        const [rows] = await db.query(sql, [email, googleId]);
+
+        if (rows.length === 0) {
+            console.error('User does not exist:', email, googleId);
+            return { success: false, message: 'User does not exist' };
+        }
+        console.log("Rows loginUserWithGoogle:", rows);
+        const user = rows; // Get the first user from the result
+
+        // Check if user object and its properties exist
+        if (!user || !user.ID || !user.Username) {
+            console.error('Invalid user data:', user);
+            return { success: false, message: 'Invalid user data' };
+        }
+
+        console.log('User found:', user);
+
+        // Return the user's ID and username on successful login
+        return {
+            success: true,
+            userId: user.ID,
+            username: user.Username,
+        };
+    } catch (error) {
+        console.error('Error during loginUserWithGoogle:', error);
+        return { success: false, message: 'Login error' };
+    } finally {
+        await db.end();
+    }
+}
 
 
 
@@ -1140,29 +1184,120 @@ async function findOrCreateGoogleUser(profile) {
 
     try {
         const googleId = profile.id;
-        const displayName = profile.displayName;
+        const displayName = profile.displayName.replace(/\s+/g, '_');
         const email = profile.emails[0].value;
 
-        // Check if the user already exists
-        const sql = `SELECT * FROM Users WHERE GoogleId = ?`;
-        let res = await db.query(sql, [googleId]);
+        // Check if the user already exists by email
+        let sql = `SELECT * FROM Users WHERE Email = ?`;
+        let res = await db.query(sql, [email]);
 
-        if (res.length > 0) {
-            // User exists
+        if (res && res.length > 0) {
+            // User exists, update GoogleID if not set
+            if (!res[0].GoogleID) {
+                await db.query('UPDATE Users SET GoogleID = ? WHERE ID = ?', [googleId, res[0].ID]);
+            }
             return res[0];
         } else {
             // Create a new user
-            const insertSql = `INSERT INTO Users (Username, Email, GoogleId) VALUES (?, ?, ?)`;
+            const insertSql = `INSERT INTO Users (Username, Email, GoogleID) VALUES (?, ?, ?)`;
             const result = await db.query(insertSql, [displayName, email, googleId]);
 
             // Fetch the new user
             const newUserSql = `SELECT * FROM Users WHERE ID = ?`;
             const newUserRes = await db.query(newUserSql, [result.insertId]);
 
+            // Create user directory
+            const rootDir = path.resolve(__dirname, '..');
+            const userDir = path.join(rootDir, 'uploads', displayName);
+            fs.mkdirSync(userDir, { recursive: true });
+            console.log("User directory created:", userDir);
+
             return newUserRes[0];
         }
     } catch (error) {
         console.error('Error in findOrCreateGoogleUser:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+async function updateUserProfilePicture(userId, profilePictureUrl) {
+    console.log("Updating profile picture for user ID:", userId);
+    console.log("Profile picture URL:", profilePictureUrl);
+    const db = await mysql.createConnection(config);
+    try {
+        // Download and save the profile picture
+        const localPath = await downloadAndSaveProfilePicture(userId, profilePictureUrl);
+
+        // Update the user's profile picture path in the database
+        const sql = `UPDATE Users SET UserPFP = ? WHERE ID = ?`;
+        await db.query(sql, [localPath, userId]);
+        console.log(`Updated profile picture for user ID: ${userId}`);
+    } catch (error) {
+        console.error('Error updating profile picture:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+async function downloadAndSaveProfilePicture(userId, url) {
+    try {
+        console.log("URL downloadAndSaveProfilePicture:", url);
+        console.log("Downloading profile picture for user ID:", userId);
+        const db = await mysql.createConnection(config);
+        const userSql = `SELECT Username FROM Users WHERE ID = ?`;
+        const [userResult] = await db.query(userSql, [userId]);
+        const username = userResult.Username;
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        const rootDir = path.resolve(__dirname, '..');
+        const filePath = path.join(rootDir, 'uploads', username, `profile_${userId}.jpg`);
+        fs.writeFileSync(filePath, response.data);
+        console.log(`Profile picture saved to ${filePath}`);
+        return `profile_${userId}.jpg`;
+    } catch (error) {
+        console.error('Error downloading profile picture:', error);
+        throw error;
+    }
+}
+
+   async function findUserByEmail(email) {
+       const db = await mysql.createConnection(config);
+       try {
+           const sql = `SELECT * FROM Users WHERE Email = ?`;
+           const [rows] = await db.query(sql, [email]);
+           console.log('Rows findUserByEmail:', rows);
+           if (rows && rows.length > 0) {
+               return rows[0];
+           }
+           return null; // Return null if no user is found
+       } catch (error) {
+           console.error('Error during findUserByEmail:', error);
+           return null;
+       } finally {
+           await db.end();
+       }
+   }
+
+// Function to link Google account to existing user
+async function linkGoogleAccount(userId, googleId) {
+    console.log("Linking Google account to user");
+    console.log("userId:", userId);
+    console.log("googleId:", googleId);
+    const db = await mysql.createConnection(config);
+
+    try {
+        const sql = `UPDATE Users SET GoogleID = ? WHERE ID = ?`;
+        await db.query(sql, [googleId, userId]);
+
+        // Fetch and return the updated user
+        const userSql = `SELECT * FROM Users WHERE ID = ?`;
+        const [rows] = await db.query(userSql, [userId]);
+        console.log("Updated user:", rows[0]);
+        return rows[0];
+    } catch (error) {
+        console.error('Error in linkGoogleAccount:', error);
         throw error;
     } finally {
         await db.end();
@@ -1176,6 +1311,8 @@ async function findUserById(id) {
     try {
         const sql = `SELECT * FROM Users WHERE ID = ?`;
         let res = await db.query(sql, [id]);
+        console.log("Rows findUserById:", res);
+        console.log("Rows findUserById 0:", res[0]);
 
         if (res.length > 0) {
             return res[0];
@@ -1491,6 +1628,10 @@ module.exports = {
     addTask,
     deleteTask,
     countLines,
+    findUserByEmail,
+    linkGoogleAccount,
+    loginUserWithGoogle,
+    updateUserProfilePicture,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

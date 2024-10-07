@@ -10,6 +10,7 @@ Will fix automatically later, current automations are not working.
 
     TERMINAL CODE RUN:
 //npm install passport passport-google-oauth20 dotenv
+npm install axios
 
 
     MARIADB RUN:
