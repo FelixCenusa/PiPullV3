@@ -29,8 +29,8 @@ async (accessToken, refreshToken, profile, done) => {
         console.log("User found MAYBE:", user);
         if (user) {
             console.log("User found passport:", user);
-            // If user exists, update profile picture if not set
-            if (!user.ProfilePicture) {
+            // If user exists and doesn't have a profile picture, update it
+            if (!user.UserPFP) {
                 console.log("Updating profile picture for user ID: Passport", user.ID);
                 console.log("Profile picture URL: Passport", profile.photos[0].value);
                 await TimeToMove.updateUserProfilePicture(user.ID, profile.photos[0].value);
@@ -40,8 +40,6 @@ async (accessToken, refreshToken, profile, done) => {
                 console.log("Linking Google account to userpassport");
                 user = await TimeToMove.linkGoogleAccount(user.ID, profile.id);
                 console.log("Google account linkedpassport:", user);
-                // now update the profile picture
-                
             }
         } else {
             // If user doesn't exist, create new user
