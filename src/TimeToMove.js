@@ -1268,16 +1268,10 @@ async function downloadAndSaveProfilePicture(userId, url) {
            const sql = `SELECT * FROM Users WHERE Email = ?`;
            const [rows] = await db.query(sql, [email]);
            console.log('Rows findUserByEmail:', rows);
-           // if the email is not found, return null
-           if (rows.length === 0) {
-               console.log('No user found with email:', email);
-               return null;
-           }
-           console.log('User found with email:', email);
            return rows;
        } catch (error) {
            console.error('Error during findUserByEmail:', error);
-           throw error; // Throw the error instead of returning null
+           throw error;
        } finally {
            await db.end();
        }
