@@ -116,7 +116,7 @@ router.post('/add-task', async (req, res) => {
 router.get('/auth/google',
     passport.authenticate('google', {
         scope: ['profile', 'email']
-        //,prompt: 'select_account' // Add this line to prompt account selection
+        //,prompt: 'select_account' // Force & Prompt account selection
     })
 );
 
