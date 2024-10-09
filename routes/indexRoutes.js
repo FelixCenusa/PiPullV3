@@ -371,6 +371,7 @@ router.get('/verify', async (req, res) => {
     const viewCounts = await TimeToMove.getPageViewCounts('/verify');
     // Render the page and pass the view counts
     // async         viewCounts
+
     if (token) {
         const result = await TimeToMove.verify(token); // Automatically verify the token
         if (result.success) {

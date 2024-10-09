@@ -7,8 +7,8 @@
     <form id="verifyForm" action="/verify" method="POST" class="verify-form">
         <div class="form-group">
             <label for="token">Enter Verification Token:</label>
-            <input type="text" id="token" name="token" required maxlength="9" pattern="\d{9}" placeholder="9-digit Token" value="<%= typeof token !== 'undefined' ? token : '' %>">
-            <small class="error-message">Token must be 9 digits long.</small>
+            <input type="text" id="token" name="token" required maxlength="11" pattern="\d{3}\s?\d{3}\s?\d{3}" placeholder="9-digit Token (e.g., 123 456 789)" value="<%= typeof token !== 'undefined' ? token : '' %>">
+            <small class="error-message">Token must be 9 digits long and can include spaces.</small>
         </div>
 
         <button type="submit" class="btn-submit">Verify</button>
@@ -27,7 +27,9 @@ if (token) {
 document.getElementById('verifyForm').addEventListener('submit', async function (event) {
     event.preventDefault();
 
-    const token = document.getElementById('token').value;
+    // Get the token input and remove spaces
+    let token = document.getElementById('token').value;
+    token = token.replace(/\s+/g, ''); // Remove all spaces
 
     try {
         const response = await fetch('/verify', {
@@ -42,11 +44,9 @@ document.getElementById('verifyForm').addEventListener('submit', async function 
 
         // Show popup based on the result
         if (result.success) {
-            //alert(`${result.message}`); // Display success message
             alert('Verification successful! Please log in to continue.');
             window.location.href = '/login'; // Redirect to login page on success
         } else {
-            //alert(`${result.message}`);
             alert('Verification failed. Please try again.');
             window.location.href = '/create_user'; // Redirect to register page on failure
         }
