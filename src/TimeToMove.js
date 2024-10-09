@@ -1595,7 +1595,7 @@ const countLines = () => {
 
 
 // Function to get boxes shared by the user
-async function getSharedBoxesByUser(userID, sortQuery) {
+async function getSharedBoxes(userID, sortQuery) {
     const db = await mysql.createConnection(config);
 
     try {
@@ -1618,7 +1618,7 @@ async function getSharedBoxesByUser(userID, sortQuery) {
 }
 
 // Function to get boxes shared with the user
-async function getSharedBoxes(userID, sortQuery) {
+async function getSharedBoxesByUser(userID, sortQuery) {
     const db = await mysql.createConnection(config);
 
     try {
@@ -1626,7 +1626,7 @@ async function getSharedBoxes(userID, sortQuery) {
             SELECT b.*
             FROM Boxes b
             JOIN BoxSharedWith bs ON b.BoxID = bs.BoxID
-            WHERE bs.SharedWithUserID = ?
+            WHERE b.UserID = ?
             ${sortQuery}
         `;
         const rows = await db.query(sql, [userID]);
