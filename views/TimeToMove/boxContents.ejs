@@ -10,30 +10,26 @@
 
 <!-- if the box object is not null, display the box contents -->
 <% if ( typeof box !== 'undefined' && box !== null) { %>
-    <%= console.log("box") %>
-    <%= console.log(box) %>
-    <%= console.log("box.TitleChosen") %>
-    <%= console.log(box[0].TitleChosen) %>
     <h1>Box: <%= box[0].TitleChosen %></h1>
     <h2>Owner: <%= user.Username %></h2>
     <h3>Is Public: <%= box[0].IsBoxPublic ? 'Yes' : 'No' %></h3>
-    <%                 
-    console.log("box[0]", box[0])
-    console.log("HERASDASbox", box)
-    console.log("user.username", user.Username)
-    console.log("box.TitleChosen", box.TitleChosen)
-    console.log("box[0].TitleChosen", box[0].TitleChosen)
-    console.log("box[0].BoxID", box[0].BoxID)
-    console.log("box.BoxID", box.BoxID)
 
+    <!-- Display the 6-digit code button only if the user is the owner -->
+    <% if (session.user && session.user.username === user.Username) { %>
+        <div class="code-reveal-container">
+            <button class="code-reveal-btn" onclick="copyToClipboard('<%= box[0].DigitCodeIfPrivate %>')">Show 6-Digit Code</button>
+            <span class="code-tooltip"><%= box[0].DigitCodeIfPrivate %></span>
+        </div>
+    <% } %>
 
-    %>
-
-    <!-- Check if the box is private and the logged-in user is not the owner -->
-    <% if (!box[0].IsBoxPublic && (!session.user || session.user.username !== user.Username)) { %>
-        <!-- Display message if the box is private and the user is not the owner -->
-        <div class="error-box">
-            <h2>Box contents are private</h2>
+    <% if (!box[0].IsBoxPublic && (!session.user || session.user.username !== user.Username) && !(session.verifiedBoxes && session.verifiedBoxes[box[0].BoxID])) { %>
+        <!-- If the box is private and the user is not the owner, show the code input form -->
+        <div class="code-input-box">
+            <h2>Enter 6-Digit Code to Access Box Contents</h2>
+            <form method="POST" action="/<%= user.Username %>/<%= box[0].BoxID %>/verifyCode">
+                <input type="text" name="inputCode" maxlength="6" pattern="\d{6}" required placeholder="Enter 6-digit code">
+                <button type="submit">Submit</button>
+            </form>
             <a href="/<%= user.Username %>" class="back-button">Back to Profile</a>
         </div>
     <% } else { %>
@@ -152,6 +148,14 @@
         <%- include('./../partials/footer.ejs') %>
 
         <script>
+            function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('6-digit code copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+        }
+
             function uploadFile(fileType) {
                 const form = document.getElementById('uploadForm');
                 form.submit();
@@ -237,5 +241,40 @@
     height: 100%; /* Fullscreen height */
 }
 
+.code-reveal-container {
+    position: relative;
+    display: inline-block;
+    margin-top: 10px;
+}
+
+.code-reveal-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.code-tooltip {
+    visibility: hidden;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* Position above the button */
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.code-reveal-container:hover .code-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
 
 </style>

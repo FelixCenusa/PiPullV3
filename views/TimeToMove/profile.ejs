@@ -118,6 +118,19 @@
 </div>
 </div>
 
+<!-- Edit Username Form -->
+<div id="editUsernameForm" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditUsernameForm()">&times;</span>
+        <h2>Edit Username</h2>
+        <form id="usernameForm" method="POST" action="/updateUsername">
+            <label for="newUsername">New Username:</label>
+            <input type="text" id="newUsername" name="newUsername" required>
+            <button type="submit" class="btn-submit">Update Username</button>
+        </form>
+    </div>
+</div>
+
 <!-- Label Style Modal -->
 <div id="labelStyleModal" class="modal">
     <div class="modal-content">
@@ -173,7 +186,15 @@
 
 
 
-
+<% if (session.user && session.user.username === user.Username) { %>
+    <div class="box-filter-container">
+        <div class="box-filter-buttons">
+            <button class="filter-btn" data-filter="own" onclick="filterBoxes('own')">Your Own Boxes</button>
+            <button class="filter-btn" data-filter="sharedWithYou" onclick="filterBoxes('sharedWithYou')">Boxes Shared With You</button>
+            <button class="filter-btn" data-filter="youShared" onclick="filterBoxes('youShared')">Boxes You've Shared</button>
+        </div>
+    </div>
+<% } %>
 <!-- Say "username"'s boxes -->
 <!-- <h2><%= user.Username %>'s Boxes</h2> -->
 <!-- Add a form for sorting the boxes with unique ID -->
@@ -200,12 +221,12 @@
 <div class="box-title-container">
     <h3><%= box.TitleChosen %></h3>
 </div>
-  <!-- Hoverable Edit/Delete/Print buttons, visible only when hovered -->
+  <!-- Hoverable Edit/Delete/Print/Share buttons, visible only when hovered -->
   <div class="btn-container">
     <% if (session.user && session.user.username === user.Username) { %>
-        <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>', '<%= box.BoxDescription %>', <%= box.IsBoxPublic %>)">Edit</button>
-
+        <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>', '<%= box.BoxDescription %>', <%= box.IsBoxPublic %>, '<%= box.DigitCodeIfPrivate %>')">Edit</button>
       <button class="delete-btn" onclick="event.stopPropagation(); openDeleteBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>')">Delete</button>
+      <button class="share-btn" style="background-color: purple;" onclick="event.stopPropagation(); openShareBoxModal('<%= user.Username %>', '<%= box.TitleChosen %>')">Share</button>
     <% } %>
     <button class="print-btn" onclick="event.stopPropagation(); printBox(<%= box.BoxID %>)">Print</button>
   </div>
@@ -220,7 +241,7 @@
   <p><strong>Number of Files:</strong> <%= box.NrOfFiles %></p>
 
   <!-- Display QR code if the box is public -->
-  <% if (box.IsBoxPublic && box.qrCodeDataURL) { %>
+  <% if (box.qrCodeDataURL) { %>
     <div class="qr-code-container">
       <h4>Share this Box:</h4>
       <img src="<%= box.qrCodeDataURL %>" alt="QR Code for <%= box.TitleChosen %>">
@@ -233,7 +254,32 @@
     <% } %>
 </div>
 
-
+<!-- Share Box Modal -->
+<div id="shareBoxModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeShareBoxModal()">&times;</span>
+        <h2>Share Box</h2>
+        <form id="shareBoxForm" method="POST" action="">
+            <label for="shareWith">Share with Username:</label>
+            <input type="text" id="shareWith" name="shareWith" placeholder="Enter username" list="usernames" required>
+            <datalist id="usernames">
+                <% allUsernames.forEach(function(username) { %>
+                    <option value="<%= username %>"><%= username %></option>
+                <% }); %>
+            </datalist>
+            <input type="hidden" id="boxID" name="boxID">
+            
+            <!-- Toggle button for sharing the 6-digit code -->
+            <div class="share-code-toggle">
+                <label for="shareCode">Share 6-Digit Code:</label>
+                <input type="checkbox" id="shareCode" name="shareCode">
+            </div>
+           
+            
+            <button type="submit" class="share-btn">Share</button>
+        </form>
+    </div>
+</div>
 
 <!-- Edit Box Modal -->
 <div id="editBoxModal" class="modal">
@@ -242,7 +288,7 @@
         <h2>Edit Box</h2>
         <form id="editBoxForm" method="POST" action="">
             <label for="newBoxName">Box Name:</label>
-            <input type="text" id="newBoxName" name="newBoxName" placeholder="Enter new box name" required oninput="sanitizeInput(this)" pattern="[a-zA-Z0-9 _-/]+" title="Only letters, numbers, spaces, underscores, slashes and dashes are allowed.">
+            <input type="text" id="newBoxName" name="newBoxName" placeholder="Enter new box name" required oninput="sanitizeInput(this)" pattern="[a-zA-Z0-9 _-/]+" title="Only letters, numbers, spaces, underscores, slashes, and dashes are allowed.">
         
             <label for="newBoxDescription">Box Description:</label>
             <textarea id="newBoxDescription" name="newBoxDescription" placeholder="Enter box description (max 4095 characters)" maxlength="4095" oninput="sanitizeInput(this)" pattern="[a-zA-Z0-9 _.,!?()-]+" title="Only letters, numbers, spaces, and common punctuation are allowed."></textarea>
@@ -260,6 +306,12 @@
                 <input type="hidden" id="isBoxPublic" name="isBoxPublic" value="">
             </div>
         
+            <!-- Input for 6-digit code, visible only if the box is private -->
+            <div id="digitCodeContainer" style="display: none;">
+                <label for="withDigitCode">6-Digit Code:</label>
+                <p>This is the 6-digit code that other users will need to input to view your box. You can change the code if you like, but it must be 6 digits. If you want the box to be entirely private and only visible to you, enter 0.</p>
+                <input type="text" id="withDigitCode" name="withDigitCode" maxlength="6" pattern="^(\d{6}|0)?$" placeholder="Enter 6-digit code or 0">
+            </div>
             <button type="submit">Update</button>
         </form>
         
@@ -283,6 +335,12 @@
 
 <script>
 
+function filterBoxes(viewType) {
+    const username = "<%= user.Username %>";
+    let url = `/${username}/${viewType}`;
+    window.location.href = url;
+}
+
 function openAccountManagementModal() {
         document.getElementById('accountManagementModal').style.display = 'block';
     }
@@ -292,8 +350,14 @@ function closeAccountManagementModal() {
     }
     
 function openEditUsernameForm() {
-        // Add logic to show a form to edit the username
-    }
+    // Display the edit username form
+    document.getElementById('editUsernameForm').style.display = 'block';
+}
+
+function closeEditUsernameForm() {
+    // Hide the edit username form
+    document.getElementById('editUsernameForm').style.display = 'none';
+}
 
 function sendDeleteConfirmationEmail() {
         // Call the route to send confirmation email
@@ -311,20 +375,31 @@ function sendDeleteConfirmationEmail() {
     }
 
 
-function toggleVisibility() {
+    function toggleVisibility() {
     const toggleButton = document.getElementById('visibilityToggleBtn');
     const isPublicInput = document.getElementById('isBoxPublic');
-    
+    const digitCodeContainer = document.getElementById('digitCodeContainer');
+    const digitCodeInput = document.getElementById('withDigitCode');
+
     if (toggleButton.textContent === 'Public') {
         toggleButton.textContent = 'Private';
         isPublicInput.value = 'false'; // Update hidden input to 'false'
         toggleButton.classList.remove('public');
         toggleButton.classList.add('private');
+        digitCodeContainer.style.display = 'block'; // Show digit code input
+
+        // Generate a random 6-digit code if not already set
+        if (!digitCodeInput.value || digitCodeInput.value === '0') {
+            const randomCode = Math.floor(100000 + Math.random() * 900000);
+            digitCodeInput.value = randomCode; // Set the random code in the input
+        }
     } else {
         toggleButton.textContent = 'Public';
         isPublicInput.value = 'true'; // Update hidden input to 'true'
         toggleButton.classList.remove('private');
         toggleButton.classList.add('public');
+        digitCodeContainer.style.display = 'none'; // Hide digit code input
+        digitCodeInput.value = ''; // Clear the input when public
     }
 }
 
@@ -353,7 +428,7 @@ document.querySelector('.create-box-form').addEventListener('submit', function (
 });
 
 // Function to open the edit modal
-function openEditBoxModal(boxID, currentBoxName, currentBoxDescription, isBoxPublic) {
+function openEditBoxModal(boxID, currentBoxName, currentBoxDescription, isBoxPublic, currentDigitCode) {
     // Set the box name and description
     document.getElementById('newBoxName').value = currentBoxName;
     document.getElementById('newBoxDescription').value = currentBoxDescription || '';
@@ -364,17 +439,23 @@ function openEditBoxModal(boxID, currentBoxName, currentBoxDescription, isBoxPub
     // Set the visibility button text and hidden input value based on the current state
     const toggleButton = document.getElementById('visibilityToggleBtn');
     const isPublicInput = document.getElementById('isBoxPublic');
-    
+    const digitCodeContainer = document.getElementById('digitCodeContainer');
+    const digitCodeInput = document.getElementById('withDigitCode');
+
     if (isBoxPublic) {
         toggleButton.textContent = 'Public';
         isPublicInput.value = 'true'; // Initial state for public box
         toggleButton.classList.add('public');
         toggleButton.classList.remove('private');
+        digitCodeContainer.style.display = 'none'; // Hide digit code input
+        digitCodeInput.value = ''; // Clear the input for public boxes
     } else {
         toggleButton.textContent = 'Private';
         isPublicInput.value = 'false'; // Initial state for private box
         toggleButton.classList.add('private');
         toggleButton.classList.remove('public');
+        digitCodeContainer.style.display = 'block'; // Show digit code input
+        digitCodeInput.value = currentDigitCode || ''; // Set the current digit code
     }
 
     // Display the modal
@@ -437,6 +518,19 @@ function openDeleteBoxModal(boxID, boxName) {
 // Function to close the delete modal
 function closeDeleteBoxModal() {
     document.getElementById('deleteBoxModal').style.display = 'none';
+}
+
+function openShareBoxModal(username, titleChosen) {
+    // Set the form action URL using username and TitleChosen
+    document.getElementById('shareBoxForm').action = '/' + username + '/' + encodeURIComponent(titleChosen) + '/share';
+
+    // Display the share modal
+    document.getElementById('shareBoxModal').style.display = 'block';
+}
+
+function closeShareBoxModal() {
+    // Hide the share modal
+    document.getElementById('shareBoxModal').style.display = 'none';
 }
 
 document.querySelector('#edit-description-form form').addEventListener('submit', function(e) {
@@ -1575,6 +1669,108 @@ function updateBoxCharCount() {
     opacity: 0.9;
 }
 
+/* Share button styling */
+.share-btn {
+    background-color: purple;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+.share-btn:hover {
+    background-color: darkviolet;
+    transform: scale(1.05); /* Slight scale effect on hover */
+}
+
+.box-filter-container {
+    display: flex;
+    justify-content: flex-start; /* Aligns the buttons to the left */
+    margin-bottom: 20px;
+}
+
+.box-filter-buttons {
+    display: inline-block;
+}
+
+.filter-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.filter-btn:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+.filter-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
+}
+
+/* General Button Styling */
+button {
+    font-family: 'Arial', sans-serif;
+    font-size: 16px;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+/* Manage Account Button */
+.btn-manage-account {
+    background-color: #28a745;
+    color: white;
+    margin: 10px 0;
+}
+
+.btn-manage-account:hover {
+    background-color: #218838;
+    transform: scale(1.05);
+}
+
+/* Modal Buttons */
+.btn-edit-username,
+.btn-delete-account {
+    background-color: #007bff;
+    color: white;
+    margin: 5px;
+}
+
+.btn-edit-username:hover,
+.btn-delete-account:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+/* Close Button */
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
 
 </style>
 
