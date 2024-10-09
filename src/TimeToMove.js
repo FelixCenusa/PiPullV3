@@ -1695,13 +1695,19 @@ async function shareBoxWithUser(boxID, shareWith, shareCode) {
         // Prepare the email message
         let emailMessage;
         if (shareCode !== '0') {
-            emailMessage = `A box named "${boxName}" has been shared with you by ${username}. 
-            Login to see the box or use Share code: ${shareCode} when opening the box from this link:
-            <a href="http://felixcenusa.com/${username}/${boxName}">Open Box</a>`;
+            emailMessage = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #4CAF50;">A box named "<span style="color: #FF5722;">${boxName}</span>" has been shared with you by <span style="color: #2196F3;">${username}</span>.</h2>
+                    <p>Login to see the box or use the <strong>Share code: <span style="color: #FF9800;">${shareCode}</span></strong> when opening the box from this link:</p>
+                    <a href="http://felixcenusa.com/${username}/${boxName}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
+                </div>`;
         } else {
-            emailMessage = `A box named "${boxName}" has been shared with you by ${username}. 
-            6 digit code has not been shared, ask the user about it if needed.
-            <a href="http://felixcenusa.com/${username}/${boxName}">Open Box</a>`;
+            emailMessage = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #4CAF50;">A box named "<span style="color: #FF5722;">${boxName}</span>" has been shared with you by <span style="color: #2196F3;">${username}</span>.</h2>
+                    <p>The 6-digit code has not been shared. Please ask the user for the code if needed.</p>
+                    <a href="http://felixcenusa.com/${username}/${boxName}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
+                </div>`;
         }
 
         // Only send email if shareCode is not "0"
