@@ -1941,7 +1941,6 @@ module.exports = {
     updateUsername,
     deleteUserByUsername,
     sendDeleteConfirmationEmail,
-    sendEmail,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,
