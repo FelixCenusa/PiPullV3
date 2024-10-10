@@ -233,7 +233,7 @@ router.post('/submit_contact', async (req, res) => {
     message = sanitizeHtml(message);
 
     // Send email using the email service
-    const emailSent = await TimeToMove.sendEmail(name, email, message);
+    const emailSent = await TimeToMove.sendEmailContact(name, email, message);
 
     if (emailSent) {
         // Return JSON response for success
@@ -256,16 +256,41 @@ router.get("/create_user", async (req, res) => {
 });
 
 router.post('/create_user', async (req, res) => {
-    let { username, email, password, isPublic } = req.body;
+    let { username, email, password, 'g-recaptcha-response': recaptchaResponse } = req.body;
+
     // Sanitize inputs to remove any potential HTML/JS
     username = sanitizeHtml(username);
     email = sanitizeHtml(email);
     password = sanitizeHtml(password);
-    // create filepath /uploads/username
+
+    // Verify reCAPTCHA
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY; // Replace with your secret key from Google reCAPTCHA
+    const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaResponse}`;
+    
+    try {
+        const captchaResponse = await axios.post(verificationURL);
+        const { success } = captchaResponse.data;
+
+        if (!success) {
+            // If CAPTCHA verification fails, show an error message
+            return res.status(400).render('TimeToMove/register.ejs', {
+                errorMessage: 'Failed CAPTCHA verification. Please try again.',
+                session: req.session,
+                data: {}
+            });
+        }
+    } catch (error) {
+        console.error('Error verifying reCAPTCHA:', error);
+        return res.status(500).send('Error verifying reCAPTCHA.');
+    }
+
+    // Proceed with the original registration logic
+    // Create filepath /uploads/username
     const uploadDir = path.join(__dirname, '..', 'uploads', username);
     if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
     }
+
     let data = {};
     try {
         data.lastUpdated = fs.readFileSync(path.join(__dirname, '..', 'lastUpdated.md'), 'utf8');
@@ -273,7 +298,7 @@ router.post('/create_user', async (req, res) => {
         console.error('Error reading lastUpdated.md:', error);
         data.lastUpdated = 'Error loading last updated date.';
     }
-    
+
     try {
         // Call the createUser function to generate the token and send email
         const result = await TimeToMove.createUser(username, email, password);
@@ -283,7 +308,11 @@ router.post('/create_user', async (req, res) => {
             return res.redirect('/verify');
         } else {
             // Handle error (e.g., username or email already exists)
-            return res.render('TimeToMove/register.ejs', { errorMessage: result.message, session: req.session, data });
+            return res.render('TimeToMove/register.ejs', {
+                errorMessage: result.message,
+                session: req.session,
+                data
+            });
         }
     } catch (error) {
         console.error('Error during registration:', error);
@@ -734,9 +763,13 @@ router.post('/:username/:boxName/share', async (req, res) => {
             actualShareCode = box.DigitCodeIfPrivate;
         }
 
-        // Logic to share the box with the specified user
-        await TimeToMove.shareBoxWithUser(box.BoxID, shareWith, actualShareCode);
-        // show a popup that says "Box shared"
+        // Define the actual path for the shared box
+        const actualBoxPath = `/${username}/${box.TitleChosen}`;
+
+        // Logic to share the box with the specified user and store the actual path
+        await TimeToMove.shareBoxWithUser(box.BoxID, shareWith, actualShareCode, actualBoxPath);
+
+        // Show a popup that says "Box shared"
         return res.send(`<script>alert('Box shared with ${shareWith}'); window.location.href='/${username}';</script>`);
 
     } catch (error) {
@@ -744,6 +777,7 @@ router.post('/:username/:boxName/share', async (req, res) => {
         res.status(500).send(`<script>alert('Error sharing box: ${error.message}'); window.location.href='/${username}';</script>`);
     }
 });
+
 
 // Helper function to render the profile page based on view type
 async function renderProfilePage(req, res, viewType) {

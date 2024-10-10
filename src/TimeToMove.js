@@ -46,7 +46,7 @@ async function sendVerificationEmail(toEmail, token) {
 }
 
 // Create a function to send emails
-async function sendEmail(name, email, message){
+async function sendEmailContact(name, email, message){
     try {
         // Email content
         let mailOptions = {
@@ -1600,14 +1600,14 @@ async function getSharedBoxes(userID, sortQuery) {
 
     try {
         const sql = `
-            SELECT b.*
+            SELECT b.*, bs.ActualBoxPath
             FROM Boxes b
             JOIN BoxSharedWith bs ON b.BoxID = bs.BoxID
             WHERE bs.SharedWithUserID = ?
             ${sortQuery}
         `;
         const rows = await db.query(sql, [userID]);
-        console.log("rows in getSharedBoxesByUser", rows);
+        console.log("rows in getSharedBoxes", rows);
         return rows;
     } catch (error) {
         console.error('Error fetching shared boxes by user:', error);
@@ -1663,8 +1663,9 @@ async function findBoxByNameAndUsername(username, boxName) {
 }
 
 // Function to share a box with a specified user
-async function shareBoxWithUser(boxID, shareWith, shareCode) {
+async function shareBoxWithUser(boxID, shareWith, shareCode, actualBoxPath) {
     const db = await mysql.createConnection(config);
+    console.log("Actual box path", actualBoxPath);
 
     try {
         // Find the user to share with
@@ -1678,13 +1679,14 @@ async function shareBoxWithUser(boxID, shareWith, shareCode) {
         const sharedWithUserID = userRows[0].ID;
         const sharedWithUserEmail = userRows[0].Email;
 
-        // Insert the share record into the BoxSharedWith table
+        // Insert the share record into the BoxSharedWith table, including actualBoxPath
         const shareSql = `
-            INSERT INTO BoxSharedWith (BoxID, SharedWithUserID)
-            VALUES (?, ?)
+            INSERT INTO BoxSharedWith (BoxID, SharedWithUserID, ActualBoxPath)
+            VALUES (?, ?, ?)
         `;
-        await db.query(shareSql, [boxID, sharedWithUserID]);
-        // get boxName from boxID
+        await db.query(shareSql, [boxID, sharedWithUserID, actualBoxPath]);
+
+        // Get boxName from boxID for logging purposes (no change here)
         const boxNameSql = `SELECT TitleChosen FROM Boxes WHERE BoxID = ?`;
         const boxNameResult = await db.query(boxNameSql, [boxID]);
         const boxName = boxNameResult[0].TitleChosen;
@@ -1692,25 +1694,25 @@ async function shareBoxWithUser(boxID, shareWith, shareCode) {
 
         const username = shareWith;
 
-        // Prepare the email message
+        // Prepare the email message, now using actualBoxPath for the URL
         let emailMessage;
         if (shareCode !== '0') {
             emailMessage = `
                 <div style="font-family: Arial, sans-serif; color: #333;">
                     <h2 style="color: #4CAF50;">A box named "<span style="color: #FF5722;">${boxName}</span>" has been shared with you by <span style="color: #2196F3;">${username}</span>.</h2>
                     <p>Login to see the box or use the <strong>Share code: <span style="color: #FF9800;">${shareCode}</span></strong> when opening the box from this link:</p>
-                    <a href="http://felixcenusa.com/${username}/${boxName}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
+                    <a href="${actualBoxPath}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
                 </div>`;
         } else {
             emailMessage = `
                 <div style="font-family: Arial, sans-serif; color: #333;">
                     <h2 style="color: #4CAF50;">A box named "<span style="color: #FF5722;">${boxName}</span>" has been shared with you by <span style="color: #2196F3;">${username}</span>.</h2>
                     <p>The 6-digit code has not been shared. Please ask the user for the code if needed.</p>
-                    <a href="http://felixcenusa.com/${username}/${boxName}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
+                    <a href="${actualBoxPath}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
                 </div>`;
         }
 
-        // Only send email if shareCode is not "0"
+        // Send the email with the actual box path
         const mailOptions = {
             from: 'felixdevmailer@gmail.com',
             to: sharedWithUserEmail,
@@ -1910,7 +1912,7 @@ module.exports = {
     updateUserDescription,
     updateBox,
     updateUserProfilePic,
-    sendEmail,
+    sendEmailContact,
     generatePasswordResetToken,
     sendResetPasswordEmail,
     resetPassword,
@@ -1939,6 +1941,7 @@ module.exports = {
     updateUsername,
     deleteUserByUsername,
     sendDeleteConfirmationEmail,
+    sendEmail,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

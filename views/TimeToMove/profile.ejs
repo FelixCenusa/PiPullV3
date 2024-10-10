@@ -209,45 +209,49 @@
     <% if (Array.isArray(boxes) && boxes.length > 0) { %>
         <% boxes.forEach(function(box) { %>
             <div class="box-card" style="
-    <% if (box.LabelChosen) { %>
-        border: 10px solid transparent;
-        border-image-source: url('/uploads/labelStyles/<%= box.LabelChosen %>');
-        border-image-slice: <%= box.BorderImageSlice || 30 %>;
-        border-image-repeat: <%= box.BorderImageRepeat || 'repeat' %>;
-    <% } %>
-" id="box-<%= box.BoxID %>" onclick="window.location.href='/<%= user.Username %>/<%= box.TitleChosen %>'">
+            <% if (box.LabelChosen) { %>
+            border: 10px solid transparent;
+            border-image-source: url('/uploads/labelStyles/<%= box.LabelChosen %>');
+            border-image-slice: <%= box.BorderImageSlice || 30 %>;
+            border-image-repeat: <%= box.BorderImageRepeat || 'repeat' %>;
+            <% } %>
+            " id="box-<%= box.BoxID %>" 
+            onclick="window.location.href='<%= box.ActualBoxPath ? box.ActualBoxPath : `/${user.Username}/${box.TitleChosen}` %>'">
 
-  <!-- Box Title Container -->
-<div class="box-title-container">
-    <h3><%= box.TitleChosen %></h3>
-</div>
-  <!-- Hoverable Edit/Delete/Print/Share buttons, visible only when hovered -->
-  <div class="btn-container">
-    <% if (session.user && session.user.username === user.Username) { %>
-        <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>', '<%= box.BoxDescription %>', <%= box.IsBoxPublic %>, '<%= box.DigitCodeIfPrivate %>')">Edit</button>
-      <button class="delete-btn" onclick="event.stopPropagation(); openDeleteBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>')">Delete</button>
-      <button class="share-btn" style="background-color: purple;" onclick="event.stopPropagation(); openShareBoxModal('<%= user.Username %>', '<%= box.TitleChosen %>')">Share</button>
-    <% } %>
-    <button class="print-btn" onclick="event.stopPropagation(); printBox(<%= box.BoxID %>)">Print</button>
-  </div>
+            <!-- Box Title Container -->
+            <div class="box-title-container">
+                <h3><%= box.TitleChosen %></h3>
+            </div>
+            
+            <div class="btn-container">
+                <!-- Only show "Edit", "Delete", and "Share" buttons if it's the user's own boxes -->
+                <% if (viewType === 'own' || viewType === 'youShared') { %>
+                    <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>', '<%= box.BoxDescription %>', <%= box.IsBoxPublic %>, '<%= box.DigitCodeIfPrivate %>')">Edit</button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); openDeleteBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>')">Delete</button>
+                    <button class="share-btn" style="background-color: purple;" onclick="event.stopPropagation(); openShareBoxModal('<%= user.Username %>', '<%= box.TitleChosen %>')">Share</button>
+                <% } %>
+                
+                <!-- Always show the "Print" button -->
+                <button class="print-btn" onclick="event.stopPropagation(); printBox(<%= box.BoxID %>)">Print</button>
+            </div>
 
-  <!-- Box Description -->
-  <p><strong>Description:</strong> <%= box.BoxDescription ? box.BoxDescription : 'No description provided.' %></p>
-  
-  <!-- Box Visibility -->
-  <p><strong>Is Public:</strong> <%= box.IsBoxPublic ? 'Yes' : 'No' %></p>
-  
-  <!-- Number of Files -->
-  <p><strong>Number of Files:</strong> <%= box.NrOfFiles %></p>
+            <!-- Box Description -->
+            <p><strong>Description:</strong> <%= box.BoxDescription ? box.BoxDescription : 'No description provided.' %></p>
 
-  <!-- Display QR code if the box is public -->
-  <% if (box.qrCodeDataURL) { %>
-    <div class="qr-code-container">
-      <h4>Share this Box:</h4>
-      <img src="<%= box.qrCodeDataURL %>" alt="QR Code for <%= box.TitleChosen %>">
-    </div>
-  <% } %>
-</div>
+            <!-- Box Visibility -->
+            <p><strong>Is Public:</strong> <%= box.IsBoxPublic ? 'Yes' : 'No' %></p>
+
+            <!-- Number of Files -->
+            <p><strong>Number of Files:</strong> <%= box.NrOfFiles %></p>
+
+            <!-- Display QR code if the box is public -->
+            <% if (box.qrCodeDataURL) { %>
+                <div class="qr-code-container">
+                    <h4>Share this Box:</h4>
+                    <img src="<%= box.qrCodeDataURL %>" alt="QR Code for <%= box.TitleChosen %>">
+                </div>
+            <% } %>
+            </div>
         <% }); %>
     <% } else { %>
         <p>No boxes found.</p>
