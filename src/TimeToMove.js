@@ -1885,9 +1885,37 @@ async function sendDeleteConfirmationEmail(email, username) {
     }
 }   
 
+// Function to get all users
+async function getAllUsers() {
+    const db = await mysql.createConnection(config);
 
+    try {
+        const sql = 'SELECT ID, Username, Email, IsAdmin FROM Users';
+        const users = await db.query(sql);
+        return users;
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
 
-
+// Function to get a user by their ID
+async function getUserByID(userID) {
+    const db = await mysql.createConnection(config);
+    
+    try {
+        const sql = 'SELECT ID, Username, IsAdmin FROM Users WHERE ID = ?';
+        const users = await db.query(sql, [userID]);
+        return users[0]; // Return the first user (should only be one)
+    } catch (error) {
+        console.error('Error fetching user by ID:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
 
 module.exports = {
     createUser,
@@ -1941,6 +1969,8 @@ module.exports = {
     updateUsername,
     deleteUserByUsername,
     sendDeleteConfirmationEmail,
+    getAllUsers,
+    getUserByID,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

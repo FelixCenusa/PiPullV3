@@ -10,6 +10,40 @@ const sanitizeHtml = require('sanitize-html');
 const passport = require('passport');
 const crypto = require('crypto');
 
+// Middleware to check if the user is an admin by querying the database
+async function isAdmin(req, res, next) {
+    if (!req.session.user) {
+        return res.status(403).send('Forbidden - You are not logged in');
+    }
+
+    try {
+        // Fetch the user's admin status from the database
+        const user = await TimeToMove.getUserByID(req.session.user.id);
+        if (user && user.IsAdmin) {
+            next(); // User is admin, allow access
+        } else {
+            res.status(403).send('Forbidden - You are not an admin');
+        }
+    } catch (error) {
+        console.error('Error checking admin status:', error);
+        res.status(500).send('Error checking admin status');
+    }
+}
+
+
+// Admin route protected by isAdmin middleware
+router.get('/admin', isAdmin, async (req, res) => {
+    try {
+        // Fetch all users (or other admin-specific data)
+        const users = await TimeToMove.getAllUsers(); // Add this function in TimeToMove.js
+        res.render('TimeToMove/ADMIN.ejs', { users, session: req.session });
+    } catch (error) {
+        console.error('Error loading admin page:', error);
+        res.status(500).send('Error loading admin dashboard.');
+    }
+});
+
+
 router.post('/updateUsername', async (req, res) => {
     const { newUsername } = req.body;
     const userId = req.session.user.id; // Assuming user ID is stored in session

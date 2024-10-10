@@ -225,10 +225,12 @@
             
             <div class="btn-container">
                 <!-- Only show "Edit", "Delete", and "Share" buttons if it's the user's own boxes -->
-                <% if (viewType === 'own' || viewType === 'youShared') { %>
-                    <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>', '<%= box.BoxDescription %>', <%= box.IsBoxPublic %>, '<%= box.DigitCodeIfPrivate %>')">Edit</button>
-                    <button class="delete-btn" onclick="event.stopPropagation(); openDeleteBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>')">Delete</button>
-                    <button class="share-btn" style="background-color: purple;" onclick="event.stopPropagation(); openShareBoxModal('<%= user.Username %>', '<%= box.TitleChosen %>')">Share</button>
+                <% if (session.user && session.user.username === user.Username) { %>
+                    <% if (viewType === 'own' || viewType === 'youShared') { %>
+                        <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>', '<%= box.BoxDescription %>', <%= box.IsBoxPublic %>, '<%= box.DigitCodeIfPrivate %>')">Edit</button>
+                        <button class="delete-btn" onclick="event.stopPropagation(); openDeleteBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>')">Delete</button>
+                        <button class="share-btn" style="background-color: purple;" onclick="event.stopPropagation(); openShareBoxModal('<%= user.Username %>', '<%= box.TitleChosen %>')">Share</button>
+                    <% } %>
                 <% } %>
                 
                 <!-- Always show the "Print" button -->

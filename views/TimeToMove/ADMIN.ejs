@@ -1,0 +1,27 @@
+<%- include('./../partials/header.ejs') %>
+
+<h1>Admin Dashboard</h1>
+
+<!-- Display list of all users -->
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Is Admin</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% users.forEach(function(user) { %>
+            <tr>
+                <td><%= user.ID %></td>
+                <td><%= user.Username %></td>
+                <td><%= user.Email %></td>
+                <td><%= user.IsAdmin ? 'Yes' : 'No' %></td>
+            </tr>
+        <% }) %>
+    </tbody>
+</table>
+
+<%- include('./../partials/footer.ejs') %>
