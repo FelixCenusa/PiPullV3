@@ -171,7 +171,15 @@ async function createUser(username, email, password) {
     // Generate a unique 9-digit verification token
     const token = Math.floor(100000000 + Math.random() * 900000000).toString();
     try {
-        const restrictedUsernames = ['profiles', 'about', 'login', 'register', 'leaderboard', 'labelStyles'];
+        const restrictedUsernames = [
+            'admin', 'felix', 'felixcenusa', 'felixcen', 'TimeToMove', 'timetomove', 'timetomoveofficial', 'timetomoveofficialcom',
+            'updateUsername', 'kanban', 'delete-task', 'leaderboard', 'sharedWithYou', 'youShared', 'share', 'profiles', 'about', 
+            'login', 'register', 'labelStyles', 'settings', 'privacyPolicy', 'termsOfService', 'contact', 
+            'help', 'faq', 'privacy', 'cookie', 'security', 'dmca', 'copyright', 'legal', 'imprint', 
+            'disclaimer', 'privacy-policy', 'terms-of-service', 'contact-us', 'help-support', 'faq-page', 
+            'privacy-settings', 'cookie-settings', 'security-settings', 'dmca-notice', 'copyright-notice',
+             'legal-notice', 'imprint-notice', 'disclaimer-notice'
+        ];
         if (restrictedUsernames.includes(username.toLowerCase())) {
             return { success: false, message: 'This username is not allowed.' };
         }
@@ -1112,16 +1120,25 @@ async function updateUserDescription(username, description) {
 
 
 // Function to update box name and description
-async function updateBox(boxID, newBoxName, newBoxDescription, isPublic) {
+async function updateBox(boxID, newBoxName, newBoxDescription, isBoxPublic, withDigitCode) {
     const db = await mysql.createConnection(config);
 
     try {
         const sanitizedDescription = newBoxDescription.slice(0, 4095); // Max length 4095 chars
-        const sql = `UPDATE Boxes SET TitleChosen = ?, BoxDescription = ?, IsBoxPublic = ? WHERE BoxID = ?`;
-        await db.query(sql, [newBoxName, newBoxDescription, isPublic, boxID]);
+        const query = `
+            UPDATE Boxes
+            SET
+                TitleChosen = ?,
+                BoxDescription = ?,
+                IsBoxPublic = ?,
+                DigitCodeIfPrivate = ?
+            WHERE BoxID = ?
+        `;
+        const values = [newBoxName, sanitizedDescription, isBoxPublic, withDigitCode, boxID];
+        await db.query(query, values);
         console.log(`Box ${boxID} updated successfully.`);
     } catch (error) {
-        console.error('Error updating box:', error);
+        console.error('Error updating box in database:', error);
         throw error;
     } finally {
         await db.end();
@@ -1577,6 +1594,297 @@ const countLines = () => {
 };
 
 
+// Function to get boxes shared by the user
+async function getSharedBoxes(userID, sortQuery) {
+    const db = await mysql.createConnection(config);
+
+    try {
+        const sql = `
+            SELECT b.*
+            FROM Boxes b
+            JOIN BoxSharedWith bs ON b.BoxID = bs.BoxID
+            WHERE bs.SharedWithUserID = ?
+            ${sortQuery}
+        `;
+        const rows = await db.query(sql, [userID]);
+        console.log("rows in getSharedBoxesByUser", rows);
+        return rows;
+    } catch (error) {
+        console.error('Error fetching shared boxes by user:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+// Function to get boxes shared with the user
+async function getSharedBoxesByUser(userID, sortQuery) {
+    const db = await mysql.createConnection(config);
+
+    try {
+        const sql = `
+            SELECT b.*
+            FROM Boxes b
+            JOIN BoxSharedWith bs ON b.BoxID = bs.BoxID
+            WHERE b.UserID = ?
+            ${sortQuery}
+        `;
+        const rows = await db.query(sql, [userID]);
+        console.log("rows in getSharedBoxes", rows);
+        return rows;
+    } catch (error) {
+        console.error('Error fetching boxes shared with user:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+// Function to find a box by its name and username
+async function findBoxByNameAndUsername(username, boxName) {
+    const db = await mysql.createConnection(config);
+
+    try {
+        const sql = `
+            SELECT b.*
+            FROM Boxes b
+            JOIN Users u ON b.UserID = u.ID
+            WHERE u.Username = ? AND b.TitleChosen = ?
+        `;
+        const rows = await db.query(sql, [username, boxName]);
+        console.log("rows in findBoxByNameAndUsername", rows);
+        return rows[0];
+    } catch (error) {
+        console.error('Error finding box by name and username:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+// Function to share a box with a specified user
+async function shareBoxWithUser(boxID, shareWith, shareCode) {
+    const db = await mysql.createConnection(config);
+
+    try {
+        // Find the user to share with
+        const userSql = `SELECT ID, Email FROM Users WHERE Username = ?`;
+        const userRows = await db.query(userSql, [shareWith]);
+        console.log(userRows);
+        console.log("userRows in shareboxwithuser");
+        if (userRows.length === 0) {
+            throw new Error('User to share with not found');
+        }
+        const sharedWithUserID = userRows[0].ID;
+        const sharedWithUserEmail = userRows[0].Email;
+
+        // Insert the share record into the BoxSharedWith table
+        const shareSql = `
+            INSERT INTO BoxSharedWith (BoxID, SharedWithUserID)
+            VALUES (?, ?)
+        `;
+        await db.query(shareSql, [boxID, sharedWithUserID]);
+        // get boxName from boxID
+        const boxNameSql = `SELECT TitleChosen FROM Boxes WHERE BoxID = ?`;
+        const boxNameResult = await db.query(boxNameSql, [boxID]);
+        const boxName = boxNameResult[0].TitleChosen;
+        console.log("boxName in shareboxwithuser", boxName);
+
+        const username = shareWith;
+
+        // Prepare the email message
+        let emailMessage;
+        if (shareCode !== '0') {
+            emailMessage = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #4CAF50;">A box named "<span style="color: #FF5722;">${boxName}</span>" has been shared with you by <span style="color: #2196F3;">${username}</span>.</h2>
+                    <p>Login to see the box or use the <strong>Share code: <span style="color: #FF9800;">${shareCode}</span></strong> when opening the box from this link:</p>
+                    <a href="http://felixcenusa.com/${username}/${boxName}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
+                </div>`;
+        } else {
+            emailMessage = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #4CAF50;">A box named "<span style="color: #FF5722;">${boxName}</span>" has been shared with you by <span style="color: #2196F3;">${username}</span>.</h2>
+                    <p>The 6-digit code has not been shared. Please ask the user for the code if needed.</p>
+                    <a href="http://felixcenusa.com/${username}/${boxName}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
+                </div>`;
+        }
+
+        // Only send email if shareCode is not "0"
+        const mailOptions = {
+            from: 'felixdevmailer@gmail.com',
+            to: sharedWithUserEmail,
+            subject: 'A box has been shared with you!',
+            html: emailMessage
+        };
+
+        await transporter.sendMail(mailOptions);
+
+    } catch (error) {
+        console.error('Error sharing box with user:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+async function getAllUsernames() {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = `SELECT Username FROM Users`;
+        const rows = await db.query(sql);
+        const usernames = [];
+        for (const row of rows) {
+            usernames.push(row.Username);
+        }
+        return usernames;
+    } catch (error) {
+        console.error('Error fetching all usernames:', error);
+        return [];
+    } finally {
+        await db.end();
+    }
+}
+
+
+async function isBoxAlreadySharedWithUser(boxID, shareWith) {
+    const db = await mysql.createConnection(config);
+
+    try {
+        const sql = `
+            SELECT COUNT(*) AS count
+            FROM BoxSharedWith
+            WHERE BoxID = ? AND SharedWithUserID = (
+                SELECT ID FROM Users WHERE Username = ?
+            )
+        `;
+        const rows = await db.query(sql, [boxID, shareWith]);
+        return rows[0].count > 0;
+    } catch (error) {
+        console.error('Error checking if box is already shared with user:', error);
+        return false;
+    } finally {
+        await db.end();
+    }
+}
+
+async function updateUsername(userId, newUsername) {
+    const db = await mysql.createConnection(config);
+    try {
+        // Check if the new username is restricted
+        const restrictedUsernames = [
+            'admin', 'felix', 'felixcenusa', 'felixcen', 'TimeToMove', 'timetomove', 'timetomoveofficial', 'timetomoveofficialcom',
+            'updateUsername', 'kanban', 'delete-task', 'leaderboard', 'sharedWithYou', 'youShared', 'share', 'profiles', 'about', 
+            'login', 'register', 'labelStyles', 'settings', 'privacyPolicy', 'termsOfService', 'contact', 
+            'help', 'faq', 'privacy', 'cookie', 'security', 'dmca', 'copyright', 'legal', 'imprint', 
+            'disclaimer', 'privacy-policy', 'terms-of-service', 'contact-us', 'help-support', 'faq-page', 
+            'privacy-settings', 'cookie-settings', 'security-settings', 'dmca-notice', 'copyright-notice',
+             'legal-notice', 'imprint-notice', 'disclaimer-notice'
+        ];
+        
+        if (restrictedUsernames.includes(newUsername.toLowerCase())) {
+            console.error('Username is restricted:', newUsername);
+            return { success: false, message: 'This username is not allowed.' };
+        }
+
+        // Check if the new username is already taken
+        const checkSql = `SELECT COUNT(*) AS count FROM Users WHERE Username = ?`;
+        const checkResult = await db.query(checkSql, [newUsername]);
+        if (checkResult.count > 0) {
+            console.error('Username already taken:', newUsername);
+            return false;
+        }
+
+        // Update the username if not taken
+        const updateSql = `UPDATE Users SET Username = ? WHERE ID = ?`;
+        await db.query(updateSql, [newUsername, userId]);
+        return true;
+    } catch (error) {
+        console.error('Error updating username:', error);
+        return false;
+    } finally {
+        await db.end();
+    }
+}
+
+// Function to delete a user by username
+async function deleteUserByUsername(username) {
+    const db = await mysql.createConnection(config);
+    try {
+        // Find all box contents and delete them
+        const deleteBoxContentsSql = `
+            DELETE bm FROM BoxMedia bm
+            JOIN Boxes b ON bm.BoxID = b.BoxID
+            JOIN Users u ON b.UserID = u.ID
+            WHERE u.Username = ?`;
+        await db.query(deleteBoxContentsSql, [username]);
+
+        // Delete all boxes shared to and from this user
+        const deleteSharedBoxesSql = `
+            DELETE bs FROM BoxSharedWith bs
+            JOIN Boxes b ON bs.BoxID = b.BoxID
+            JOIN Users u ON b.UserID = u.ID
+            WHERE u.Username = ? OR bs.SharedWithUserID = (SELECT ID FROM Users WHERE Username = ?)`;
+        await db.query(deleteSharedBoxesSql, [username, username]);
+
+        // Delete all associated boxes
+        const deleteBoxesSql = `
+            DELETE b FROM Boxes b
+            JOIN Users u ON b.UserID = u.ID
+            WHERE u.Username = ?`;
+        await db.query(deleteBoxesSql, [username]);
+
+        // Delete the user
+        const deleteUserSql = `DELETE FROM Users WHERE Username = ?`;
+        await db.query(deleteUserSql, [username]);
+
+        return true;
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        return false;
+    } finally {
+        await db.end();
+    }
+}
+
+// Function to send a delete confirmation email
+async function sendDeleteConfirmationEmail(email, username) {
+    console.log("email in sendDeleteConfirmationEmail", email);
+    console.log("username in sendDeleteConfirmationEmail", username);
+    const db = await mysql.createConnection(config);
+    try {
+        // Generate a security code
+        const securityCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Prepare the email message
+        const emailMessage = `
+            <p>Hello <strong>${username}</strong>,</p>
+            <p>Please confirm your account deletion by clicking the link below:</p>
+            <p><a href="http://felixcenusa.com/${username}/confirmDelete?code=${securityCode}">Confirm Account Deletion</a></p>
+            <p style="color: red; font-size: 18px;"><strong>Warning:</strong> This action <u>cannot be undone</u> and will delete all contents uploaded and all data stored in this user.</p>
+            <p>If you did not request this, please ignore this email.</p>
+        `;
+
+        // Send the email
+        const mailOptions = {
+            from: 'felixdevmailer@gmail.com',
+            to: email,
+            subject: 'Account Deletion Confirmation',
+            html: emailMessage
+        };
+
+        await transporter.sendMail(mailOptions);
+        return securityCode;
+    } catch (error) {
+        console.error('Error sending delete confirmation email:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}   
+
+
+
 
 
 module.exports = {
@@ -1622,6 +1930,15 @@ module.exports = {
     linkGoogleAccount,
     loginUserWithGoogle,
     updateUserProfilePicture,
+    getSharedBoxesByUser,
+    getSharedBoxes,
+    findBoxByNameAndUsername,
+    shareBoxWithUser,
+    getAllUsernames,
+    isBoxAlreadySharedWithUser,
+    updateUsername,
+    deleteUserByUsername,
+    sendDeleteConfirmationEmail,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

@@ -8,6 +8,38 @@ const archiver = require('archiver');
 const QRCode = require('qrcode'); // Using qrcode without canvas
 const sanitizeHtml = require('sanitize-html');
 const passport = require('passport');
+const crypto = require('crypto');
+
+router.post('/updateUsername', async (req, res) => {
+    const { newUsername } = req.body;
+    const userId = req.session.user.id; // Assuming user ID is stored in session
+
+    try {
+        // Update the username in the database
+        const result = await TimeToMove.updateUsername(userId, newUsername);
+
+        if (result) {
+            const oldUsername = req.session.user.username;
+            // Update the session with the new username
+            req.session.user.username = newUsername;
+            // Update the uploads/username directory
+            const oldUploadsDir = path.join(__dirname, '..', 'uploads', oldUsername);
+            const newUploadsDir = path.join(__dirname, '..', 'uploads', newUsername);
+            if (fs.existsSync(oldUploadsDir)) {
+                fs.renameSync(oldUploadsDir, newUploadsDir);
+            }
+
+            // Redirect to the profile page with a success message
+            res.redirect(`/${newUsername}?success=Username updated successfully`);
+        } else {
+            // Handle case where update fails
+            res.status(400).send('Failed to update username, username already taken or username is restricted');
+        }
+    } catch (error) {
+        console.error('Error updating username:', error);
+        res.status(500).send('Error updating username');
+    }
+});
 
 // add a route for the kanban board
 router.get('/kanban', async (req, res) => {
@@ -339,6 +371,7 @@ router.get('/verify', async (req, res) => {
     const viewCounts = await TimeToMove.getPageViewCounts('/verify');
     // Render the page and pass the view counts
     // async         viewCounts
+
     if (token) {
         const result = await TimeToMove.verify(token); // Automatically verify the token
         if (result.success) {
@@ -613,30 +646,122 @@ router.get('/leaderboard', async (req, res) => {
 });
 
 
+router.post('/:username/sendDeleteConfirmation', async (req, res) => {
+    const { username } = req.params;
 
+    try {
+        // Fetch the user's email from the database
+        const user = await TimeToMove.getUserByUsername(username);
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
 
+        // Call the function to generate a security code and send the confirmation email
+        const securityCode = await TimeToMove.sendDeleteConfirmationEmail(user.Email, user.Username);
 
+        // Store the security code in the user's session or database
+        req.session.securityCode = securityCode;
 
+        res.status(200).send('Confirmation email sent');
+    } catch (error) {
+        console.error('Error processing request:', error);
+        res.status(500).send('Error processing request');
+    }
+});
+
+router.get('/:username/confirmDelete', async (req, res) => {
+    const { username } = req.params;
+    const { code } = req.query;
+
+    try {
+        // Check if the security code matches
+        if (code !== req.session.securityCode) {
+            return res.status(403).send('Invalid security code');
+        }
+
+        // Logic to delete the user's account
+        const result = await TimeToMove.deleteUserByUsername(username);
+        if (result) {
+            // delete the uploads / username folder
+            const userFolderPath = path.join(__dirname, '..', 'uploads', username);
+            fs.rmdirSync(userFolderPath, { recursive: true });
+            res.send('Your account and all its assets have been successfully deleted.');
+        } else {
+            res.status(400).send('Failed to delete account.');
+        }
+    } catch (error) {
+        console.error('Error deleting account:', error);
+        res.status(500).send('Error deleting account.');
+    }
+});
 
 router.get('/:username', async (req, res) => {
+    await renderProfilePage(req, res, 'own');
+});
+
+router.get('/:username/own', async (req, res) => {
+    await renderProfilePage(req, res, 'own');
+});
+
+router.get('/:username/sharedWithYou', async (req, res) => {
+    await renderProfilePage(req, res, 'sharedWithYou');
+});
+
+router.get('/:username/youShared', async (req, res) => {
+    await renderProfilePage(req, res, 'youShared');
+});
+
+router.post('/:username/:boxName/share', async (req, res) => {
+    const { username, boxName } = req.params;
+    const { shareWith, shareCode } = req.body;
+    console.log("shareCode in sharebox", shareCode);
+
+    try {
+        // Find the box by name and username
+        const box = await TimeToMove.findBoxByNameAndUsername(username, boxName);
+        if (!box) {
+            return res.status(404).send(`<script>alert('Box not found'); window.location.href='/${username}/${boxName}';</script>`);
+        }
+
+        // Check if the box is already shared with the specified user
+        const isAlreadyShared = await TimeToMove.isBoxAlreadySharedWithUser(box.BoxID, shareWith);
+        if (isAlreadyShared) {
+            return res.status(400).send(`<script>alert('Box is already shared with ${shareWith}'); window.location.href='/${username}';</script>`);
+        }
+
+        let actualShareCode = '0';
+        if (shareCode === 'on') {
+            actualShareCode = box.DigitCodeIfPrivate;
+        }
+
+        // Logic to share the box with the specified user
+        await TimeToMove.shareBoxWithUser(box.BoxID, shareWith, actualShareCode);
+        // show a popup that says "Box shared"
+        return res.send(`<script>alert('Box shared with ${shareWith}'); window.location.href='/${username}';</script>`);
+
+    } catch (error) {
+        console.error('Error sharing box:', error);
+        res.status(500).send(`<script>alert('Error sharing box: ${error.message}'); window.location.href='/${username}';</script>`);
+    }
+});
+
+// Helper function to render the profile page based on view type
+async function renderProfilePage(req, res, viewType) {
     const { username } = req.params;
     const session = req.session;
-    const sortOrder = req.query.sortOrder || 'recent';  // Default to 'recent' if no sort order is provided
-    
-    await TimeToMove.recordPageView(req, `${username}`);
+    const sortOrder = req.query.sortOrder || 'recent';
 
-    // Retrieve the view counts
+    await TimeToMove.recordPageView(req, `${username}`);
     const viewCounts = await TimeToMove.getPageViewCounts(`${username}`);
 
     let sortQuery;
     if (sortOrder === 'mostContent') {
-        sortQuery = 'ORDER BY NrOfFiles DESC';  // Sort by the number of files in each box
+        sortQuery = 'ORDER BY NrOfFiles DESC';
     } else {
-        sortQuery = 'ORDER BY BoxID DESC';  // Default: Sort by most recent
+        sortQuery = 'ORDER BY BoxID DESC';
     }
 
     try {
-        // Fetch the user by username
         const user = await TimeToMove.getUserByUsername(username);
 
         if (!user) {
@@ -644,29 +769,44 @@ router.get('/:username', async (req, res) => {
             return res.status(404).send('User not found');
         }
 
-        // Fetch the boxes created by the user with the selected sort order
-        const userBoxes = await TimeToMove.getUserBoxes(user.ID, sortQuery);
+        let boxes = [];
+        console.log("user.ID in renderProfilePage", user.ID);
+        if (viewType === 'own') {
+            boxes = await TimeToMove.getUserBoxes(user.ID, sortQuery);
+        } else if (viewType === 'sharedWithYou') {
+            boxes = await TimeToMove.getSharedBoxes(user.ID, sortQuery);
+        } else if (viewType === 'youShared') {
+            boxes = await TimeToMove.getSharedBoxesByUser(user.ID, sortQuery);
+        }
 
-        // Generate QR codes for public boxes
-        for (const box of userBoxes) {
-            if (box.IsBoxPublic) {
+        // Ensure boxes is an array
+        if (!Array.isArray(boxes)) {
+            boxes = [];
+        }
+
+        // Generate QR codes for public boxes and private boxes with a non-zero 6-digit code
+        for (const box of boxes) {
+            console.log(`Processing box: ${box.TitleChosen}`);
+            console.log(`IsBoxPublic: ${box.IsBoxPublic}`);
+            console.log(`withDigitCode: ${box.withDigitCode}`);
+
+            if (box.IsBoxPublic || (box.DigitCodeIfPrivate && box.DigitCodeIfPrivate !== '0')) {
                 const boxURL = `${req.protocol}://${req.get('host')}/${username}/${box.TitleChosen}`;
-                
-                // Generate QR code as Data URL (base64) without canvas
+                console.log(`Generating QR code for URL: ${boxURL}`);
                 const qrCodeDataURL = await QRCode.toDataURL(boxURL, {
                     color: {
-                        dark: '#000000', // QR code color (black)
-                        light: '#00000000' // Transparent background (RGBA)
+                        dark: '#000000',
+                        light: '#00000000'
                     }
                 });
-                
                 box.qrCodeDataURL = qrCodeDataURL;
+                console.log(`QR code generated for box: ${box.TitleChosen}`);
             } else {
                 box.qrCodeDataURL = null;
+                console.log(`No QR code generated for box: ${box.TitleChosen}`);
             }
         }
 
-        // Get the list of label styles
         const labelStylesDir = path.join(__dirname, '..', 'uploads', 'labelStyles');
         let labelStyles = [];
         if (fs.existsSync(labelStylesDir)) {
@@ -674,21 +814,25 @@ router.get('/:username', async (req, res) => {
             labelStyles = files.map(filename => ({ filename }));
         }
 
-        // Render the user's profile page
+        // Fetch all usernames
+        const allUsernames = await TimeToMove.getAllUsernames();
+
         res.render('TimeToMove/profile.ejs', {
             user,
-            boxes: userBoxes,
-            labelStyles: labelStyles,
+            boxes,
+            labelStyles,
             isOwner: session.user && session.user.username === user.Username,
-            session: session,
-            sortOrder, // Pass the current sort order to the template,
-            viewCounts
+            session,
+            sortOrder,
+            viewCounts,
+            viewType,
+            allUsernames  // Add this to pass to the view
         });
     } catch (error) {
         console.error('Error loading user profile:', error);
         res.status(500).send('Error loading profile.');
     }
-});
+}
 
 
 // Route for updating the user description
@@ -759,21 +903,23 @@ router.get('/:username/deleteProfilePic', async function (req, res) {
 // Route to update box name, description, and public/private status
 router.post('/:username/:boxID/editBox', async (req, res) => {
     let { username, boxID } = req.params;
-    let { newBoxName, newBoxDescription, isBoxPublic } = req.body; // Add isBoxPublic to handle the public/private toggle
+    let { newBoxName, newBoxDescription, isBoxPublic, withDigitCode } = req.body;
 
     // Sanitize inputs to remove any potential HTML/JS
     username = sanitizeHtml(username);
     boxID = sanitizeHtml(boxID);
     newBoxName = sanitizeHtml(newBoxName);
     newBoxDescription = sanitizeHtml(newBoxDescription);
+    withDigitCode = sanitizeHtml(withDigitCode); // Sanitize the digit code
+
     // Convert isBoxPublic to a boolean
-    isBoxPublic = (isBoxPublic === 'true'); // This will make isBoxPublic a boolean value
+    isBoxPublic = (isBoxPublic === 'true');
 
     try {
         // Ensure the user is logged in and is the owner of the box
         if (req.session.user && req.session.user.username === username) {
-            // Call the function to update the box with the public/private status
-            await TimeToMove.updateBox(boxID, newBoxName, newBoxDescription, isBoxPublic);
+            // Call the function to update the box with the public/private status and digit code
+            await TimeToMove.updateBox(boxID, newBoxName, newBoxDescription, isBoxPublic, withDigitCode);
 
             // Redirect back to the profile page
             res.redirect('/' + username);
@@ -804,13 +950,10 @@ function readFilePromise(filePath) {
 
 router.get('/:username/:boxName', async (req, res) => {
     const { username, boxName } = req.params;
-    console.log("usernameAAAAASDASDASDASD", username);
-    console.log("boxNameADASDASDASDASD", boxName);
-    console.log(req.session.user);
-    console.log(req.params);
-    console.log(req.params.username);
-    console.log("IDK");
-    
+    console.log("username:", username);
+    console.log("boxName:", boxName);
+    console.log("Session user:", req.session.user);
+
     await TimeToMove.recordPageView(req, `${username}${boxName}`);
     // Retrieve the view counts
     const viewCounts = await TimeToMove.getPageViewCounts(`${username}${boxName}`);
@@ -859,24 +1002,14 @@ if (!isNaN(boxName)) {
         if (!box) {
             return res.status(404).send('Box not found');
         }
-        const isOwner = req.params.username === user.Username;
-        console.log("isOwner", isOwner);
-        console.log("box", box);
-        console.log("box[0]", box[0]);
-        if (!box[0].IsBoxPublic && !isOwner) {
-            return res.render('TimeToMove/boxContents', {
-                errorMessage: 'Access denied, box is private.',
-                user,
-                box: null, // Pass null when box is not found
-                contents: [],
-                session: req.session,
-                viewCounts
-            });
-        }
 
-        const boxContents = await TimeToMove.getBoxContents(boxID);
-        // Calculate total size of all files in the box
-        const totalSize = boxContents.reduce((acc, content) => acc + content.MediaSize, 0);
+        const isOwner = req.params.username === user.Username;
+        const isVerified = req.session.verifiedBoxes && req.session.verifiedBoxes[boxID];
+
+        // Check if the box is public, the user is the owner, or the box has been verified
+        if (box[0].IsBoxPublic || isOwner || isVerified) {
+            const boxContents = await TimeToMove.getBoxContents(boxID);
+            const totalSize = boxContents.reduce((acc, content) => acc + content.MediaSize, 0);
 
         await Promise.all(boxContents.map(async content => {
             if (content.MediaType === 'txt') {
@@ -891,16 +1024,25 @@ if (!isNaN(boxName)) {
             }
         }));
 
-        res.render('TimeToMove/boxContents.ejs', {
-            errorMessage: "",
-            user,
-            box,
-            contents: boxContents,
-            isOwner,
-            totalSize,
-            session: req.session,
-            viewCounts
-        });
+            res.render('TimeToMove/boxContents.ejs', {
+                errorMessage: "",
+                user,
+                box,
+                contents: boxContents,
+                isOwner,
+                totalSize,
+                session: req.session,
+                viewCounts
+            });
+        } else {
+            res.render('TimeToMove/boxContents.ejs', {
+                errorMessage: 'Access denied, box is private.',
+                user,
+                box: null,
+                contents: [],
+                session: req.session
+            });
+        }
     } catch (error) {
         console.error('Error loading box contents:', error);
         res.status(500).send('Error loading box contents.');
@@ -1201,6 +1343,50 @@ router.post('/:username/:boxID/delete', async (req, res) => {
     } catch (err) {
         console.error('Error deleting box:', err);
         res.status(500).send('Error deleting box');
+    }
+});
+
+router.post('/:username/:boxID/verifyCode', async (req, res) => {
+    const { username, boxID } = req.params;
+    const { inputCode } = req.body;
+
+    try {
+        const user = await TimeToMove.getUserByUsername(username);
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        const box = await TimeToMove.getBoxByID(user.ID, boxID);
+        if (!box) {
+            return res.status(404).send('Box not found');
+        }
+
+        const isOwner = req.session.user && req.session.user.username === user.Username;
+
+        // Debug: Log the codes being compared
+        console.log('Input Code:', inputCode);
+        console.log('Stored Code:', box[0].DigitCodeIfPrivate);
+
+        // Ensure both codes are strings for comparison
+        if (String(box[0].DigitCodeIfPrivate) === String(inputCode) || isOwner) {
+            // Store a flag in the session to indicate successful verification
+            req.session.verifiedBoxes = req.session.verifiedBoxes || {};
+            req.session.verifiedBoxes[boxID] = true;
+
+            // Redirect to the box contents page
+            return res.redirect(`/${username}/${boxID}`);
+        } else {
+            res.render('TimeToMove/boxContents.ejs', {
+                errorMessage: 'Incorrect code. Access denied.',
+                user,
+                box: null,
+                contents: [],
+                session: req.session
+            });
+        }
+    } catch (error) {
+        console.error('Error verifying code:', error);
+        res.status(500).send('Error verifying code.');
     }
 });
 
