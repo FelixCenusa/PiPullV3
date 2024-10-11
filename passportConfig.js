@@ -6,7 +6,7 @@ const TimeToMove = require('./src/TimeToMove'); // Adjust the path accordingly
 console.log("Passport config correctly imported")
 // if localhost, callbackURL should be: "http://localhost:1337/auth/google/callback"
 // if deployed, callbackURL should be: "https://felixcenusa.com/auth/google/callback"
-const isTisProduction = 0; // Change this to 1 if you are deploying
+const isTisProduction = 1; // Change this to 1 if you are deploying
 let callBackURLHere = "";
 if(isTisProduction){
     callBackURLHere = "https://felixcenusa.com/auth/google/callback";
