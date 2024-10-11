@@ -1,5 +1,21 @@
 <%- include('./../partials/header.ejs') %>
 
+<% if (isDisabled) { %>
+    <h1>TEST IS DISABLED :(</h1>
+    <% if (session.user && session.user.username === user.Username) { %>
+    <div class="alert alert-danger" role="alert">
+        Your account is currently disabled. You can enable it by clicking the button below, or delete it.
+    </div>
+    <button class="btn-enable-account" onclick="window.location.href='/<%= user.Username %>/enableAccount'">Enable Account</button>
+    <button class="btn-delete-account" onclick="sendDeleteConfirmationEmail()">Delete Account</button>
+    <% } else { %>
+    <div class="alert alert-danger" role="alert">
+        <h1>This account is currently disabled :(</h1>
+    </div>
+    <% } %>
+    <% } else { %>
+
+
 <div class="profile-container">
     <!-- Profile and Greeting Section -->
 <div class="profile-box-card">
@@ -67,7 +83,14 @@
                 <h2>Manage Account</h2>
                 <p>You can either edit your username or delete your account.</p>
                 <button class="btn-edit-username" onclick="openEditUsernameForm()">Edit Username</button>
-                <button class="btn-delete-account" onclick="sendDeleteConfirmationEmail()">Delete Account</button>
+                <!-- If the user has "isDisabled" set to true, show the "Enable Account" button and "delete account" button-->
+                <% if (isDisabled) { %>
+                    <button class="btn-enable-account" onclick="window.location.href='/<%= user.Username %>/enableAccount'">Enable Account</button>
+                    <button class="btn-delete-account" onclick="sendDeleteConfirmationEmail()">Delete Account</button>
+                <% } else { %>
+                    <!-- else, show the "Disable Account" -->
+                    <button class="btn-disable-account" onclick="window.location.href='/<%= user.Username %>/disableAccount'">Disable Account</button>
+                <% } %>
             </div>
         </div>
         <!-- Display the user's description -->
@@ -341,7 +364,7 @@
         </form>
     </div>
 </div>
-
+<% } %>
 <%- include('./../partials/footer.ejs') %>
 
 <script>

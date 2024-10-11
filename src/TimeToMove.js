@@ -2051,6 +2051,54 @@ async function getInactiveUsers() {
     }
 }
 
+// function to check if user isDisabled
+async function isUserDisabled(username) {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = `SELECT isDisabled FROM Users WHERE Username = ?`;
+        const result = await db.query(sql, [username]);
+
+        
+
+        return result[0].isDisabled;
+    } catch (error) {
+        console.error('Error checking if user is disabled:', error);
+        return false;
+    } finally {
+        await db.end();
+    }
+}
+
+// function to disableAccount
+async function disableAccount(username) {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = `UPDATE Users SET isDisabled = 1 WHERE Username = ?`;
+        const result = await db.query(sql, [username]);
+        return result.affectedRows > 0;
+    } catch (error) {
+        console.error('Error disabling account:', error);
+        return false;
+    } finally {
+        await db.end();
+    }
+}
+
+// function to enableAccount
+async function enableAccount(username) {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = `UPDATE Users SET isDisabled = 0 WHERE Username = ?`;
+        const result = await db.query(sql, [username]);
+        return result.affectedRows > 0;
+    } catch (error) {
+        console.error('Error enabling account:', error);
+        return false;
+    } finally {
+        await db.end();
+    }
+}
+
 module.exports = {
     createUser,
     getAllUsers,
@@ -2111,6 +2159,9 @@ module.exports = {
     getAllUsersAndDetails,
     updateLastLoggedIn,
     getInactiveUsers,
+    isUserDisabled,
+    disableAccount,
+    enableAccount,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

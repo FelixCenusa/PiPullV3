@@ -1,8 +1,8 @@
 const cron = require('node-cron');
-const TimeToMove = require('./src/TimeToMove'); // Database interaction module
-const { sendEmail } = require('./emailService'); // Email sending service
+const TimeToMove = require('./src/TimeToMove'); 
+const { sendEmail } = require('./emailService'); 
 
-// Run a task every day at 7am to check for inactivity
+// Task runs every day at 7am to check for inactivity
 cron.schedule('0 7 * * *', async () => {
     try {
         const inactiveUsers = await TimeToMove.getInactiveUsers();

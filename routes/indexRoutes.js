@@ -785,6 +785,27 @@ router.get('/leaderboard', async (req, res) => {
     }
 });
 
+// Enable account
+router.get('/:username/enableAccount', async (req, res) => {
+    // Enable the account
+    await TimeToMove.enableAccount(req.params.username);
+    // Render the page and pass the view counts
+    res.render('TimeToMove/enableAccount', { 
+        session: req.session, 
+        username: req.params.username
+    });
+});
+
+// Disable account
+router.get('/:username/disableAccount', async (req, res) => {
+    // Disable the account
+    await TimeToMove.disableAccount(req.params.username);
+    // Render the page and pass the view counts
+    res.render('TimeToMove/disableAccount', { 
+        session: req.session, 
+        username: req.params.username
+    });
+});
 
 router.post('/:username/sendDeleteConfirmation', async (req, res) => {
     const { username } = req.params;
@@ -898,7 +919,8 @@ async function renderProfilePage(req, res, viewType) {
 
     await TimeToMove.recordPageView(req, `${username}`);
     const viewCounts = await TimeToMove.getPageViewCounts(`${username}`);
-
+    // get isDisabled from the database
+    const isDisabled = await TimeToMove.isUserDisabled(username);
     let sortQuery;
     if (sortOrder === 'mostContent') {
         sortQuery = 'ORDER BY NrOfFiles DESC';
@@ -977,13 +999,15 @@ async function renderProfilePage(req, res, viewType) {
             viewCounts,
             viewType,
             isAdmin,
-            allUsernames  
+            allUsernames,
+            isDisabled
         });
     } catch (error) {
         console.error('Error loading user profile:', error);
         res.status(500).send('Error loading profile.');
     }
 }
+
 
 
 // Route for updating the user description
@@ -1007,7 +1031,8 @@ router.post('/:username/editDescription', async (req, res) => {
                 return res.render('TimeToMove/profile', {
                     user: req.session.user,
                     errorMessage: 'Error updating description',
-                    session: req.session
+                    session: req.session,
+                    isDisabled: false
                 });
             }
         } else {

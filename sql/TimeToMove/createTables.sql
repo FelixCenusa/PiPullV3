@@ -42,6 +42,7 @@ CREATE TABLE Users (
     GoogleID VARCHAR(255), -- Google ID for OAuth
     StealthMode BOOLEAN DEFAULT FALSE, -- Stealth mode flag
     LastLoggedIn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    isDisabled BOOLEAN DEFAULT FALSE,
     IsAdmin BOOLEAN DEFAULT FALSE -- Admin flag
 );
 
