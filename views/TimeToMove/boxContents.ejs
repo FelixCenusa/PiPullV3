@@ -61,6 +61,22 @@
                 <input type="file" id="uploadText" name="textFile" accept=".txt" style="display:none;" onchange="uploadFile('text')">
                 <input type="file" id="uploadAudio" name="audioFile" accept="audio/*" style="display:none;" onchange="uploadFile('audio')">
             </form>
+
+            <!-- Media capture menu -->
+            <div id="media-menu" class="media-menu">
+                <button id="captureImageBtn">Take Picture</button>
+                <button id="recordAudioBtn">Record Audio</button>
+                <button id="recordVideoBtn">Record Video</button>
+                <button id="addTextBtn">Add Text</button>
+            </div>
+
+            <!-- Hidden form to submit the captured media -->
+            <form id="mediaForm" method="POST" action="/<%= user.Username %>/<%= box[0].BoxID %>/upload" enctype="multipart/form-data" style="display:none;">
+                <input type="file" id="capturedImage" name="imageFile" accept="image/*">
+                <input type="file" id="capturedAudio" name="audioFile" accept="audio/*">
+                <input type="file" id="capturedVideo" name="videoFile" accept="video/*">
+                <input type="file" id="capturedText" name="textFile" accept=".txt">
+            </form>
         <% } %>
 
         <!-- Button to go back to the user's profile page -->
@@ -171,6 +187,145 @@
         </script>
     <% } %>
 <% } %>
+
+<!-- Media capture menu -->
+<div id="media-menu" class="media-menu">
+    <button id="captureImageBtn">Take Picture</button>
+    <button id="recordAudioBtn">Record Audio</button>
+    <button id="recordVideoBtn">Record Video</button>
+    <button id="addTextBtn">Add Text</button>
+</div>
+
+<!-- Hidden form to submit the captured media -->
+<form id="mediaForm" method="POST" action="/<%= user.Username %>/<%= box[0].BoxID %>/upload" enctype="multipart/form-data" style="display:none;">
+    <input type="file" id="capturedImage" name="imageFile" accept="image/*">
+    <input type="file" id="capturedAudio" name="audioFile" accept="audio/*">
+    <input type="file" id="capturedVideo" name="videoFile" accept="video/*">
+    <input type="file" id="capturedText" name="textFile" accept=".txt">
+</form>
+
+<!-- Include scripts for handling media capture -->
+<script>
+    // Capture Image
+    document.getElementById('captureImageBtn').addEventListener('click', async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const videoElement = document.createElement('video');
+        videoElement.srcObject = stream;
+        videoElement.play();
+        
+        const canvas = document.createElement('canvas');
+        document.body.appendChild(videoElement); // For previewing the stream
+
+        // Capture image after a delay
+        setTimeout(() => {
+            canvas.getContext('2d').drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/png');
+
+            // Convert base64 to file and append it to the form
+            const blob = dataURItoBlob(imageData);
+            const file = new File([blob], "capturedImage.png", { type: "image/png" });
+            const formData = new FormData(document.getElementById('mediaForm'));
+            formData.append('imageFile', file);
+
+            // Submit the form
+            uploadCapturedMedia(formData);
+        }, 3000); // Example delay for taking picture
+    });
+
+    // Record Audio
+    document.getElementById('recordAudioBtn').addEventListener('click', async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        const audioChunks = [];
+
+        mediaRecorder.ondataavailable = event => {
+            audioChunks.push(event.data);
+        };
+
+        mediaRecorder.start();
+
+        setTimeout(() => {
+            mediaRecorder.stop();
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const file = new File([audioBlob], "recordedAudio.wav", { type: "audio/wav" });
+                const formData = new FormData(document.getElementById('mediaForm'));
+                formData.append('audioFile', file);
+
+                // Submit the form
+                uploadCapturedMedia(formData);
+            };
+        }, 5000); // Example 5-second audio recording
+    });
+
+    // Record Video
+    document.getElementById('recordVideoBtn').addEventListener('click', async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        const videoChunks = [];
+
+        mediaRecorder.ondataavailable = event => {
+            videoChunks.push(event.data);
+        };
+
+        mediaRecorder.start();
+
+        setTimeout(() => {
+            mediaRecorder.stop();
+            mediaRecorder.onstop = () => {
+                const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+                const file = new File([videoBlob], "recordedVideo.webm", { type: "video/webm" });
+                const formData = new FormData(document.getElementById('mediaForm'));
+                formData.append('videoFile', file);
+
+                // Submit the form
+                uploadCapturedMedia(formData);
+            };
+        }, 5000); // Example 5-second video recording
+    });
+
+    // Add Text
+    document.getElementById('addTextBtn').addEventListener('click', () => {
+        const text = prompt("Enter your text:");
+        const textBlob = new Blob([text], { type: 'text/plain' });
+        const file = new File([textBlob], "textFile.txt", { type: "text/plain" });
+        const formData = new FormData(document.getElementById('mediaForm'));
+        formData.append('textFile', file);
+
+        // Submit the form
+        uploadCapturedMedia(formData);
+    });
+
+    // Helper function to upload the media
+    async function uploadCapturedMedia(formData) {
+        const response = await fetch("/<%= user.Username %>/<%= box[0].BoxID %>/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        if (response.ok) {
+            alert("Media uploaded successfully!");
+            location.reload(); // Reload page to reflect changes
+        } else {
+            alert("Failed to upload media.");
+        }
+    }
+
+    // Convert data URI to Blob
+    function dataURItoBlob(dataURI) {
+        const byteString = atob(dataURI.split(',')[1]);
+        const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+
+        for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+
+        return new Blob([ab], { type: mimeString });
+    }
+</script>
+
 
 <style>
 
