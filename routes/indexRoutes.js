@@ -1279,32 +1279,6 @@ router.post('/:username/:boxName/upload', upload.fields([
             file = req.files.audioFile[0];
         } else if (req.files.videoFile) {  // Handle video files
             file = req.files.videoFile[0];
-        //     const maxSize = 10 * 1024 * 1024;  // Maximum file size in bytes (e.g., 50MB)
-
-        //     if (file.size > maxSize) {
-        //         const outputFilePath = path.join(__dirname, '..', 'uploads', username, `resized_${file.originalname}`);
-
-        //         // Resize the video if it's too large
-        //         ffmpeg(file.path)
-        //             .size('480x320')  // Example resolution, can be adjusted
-        //             .save(outputFilePath)
-        //             .on('end', async () => {
-        //                 console.log('Video resized successfully.');
-
-        //                 // Insert resized video into the database
-        //                 const mediaPath = path.join(username, `resized_${file.originalname}`);
-        //                 await TimeToMove.insertMediaIntoBox(boxID.toString(), mediaPath, path.extname(outputFilePath).slice(1));
-
-        //                 // Redirect back to the box page after upload
-        //                 res.redirect(`/${username}/${boxName}`);
-        //             })
-        //             .on('error', (err) => {
-        //                 console.error('Error resizing video:', err);
-        //                 res.status(500).send('Error resizing video.');
-        //             });
-
-        //         return;  // Stop further processing until the resizing completes
-        //     }
          }
         console.log("gotThisFar", gotThisFar++);
         

@@ -61,7 +61,15 @@
                 <input type="file" id="uploadText" name="textFile" accept=".txt" style="display:none;" onchange="uploadFile('text')">
                 <input type="file" id="uploadAudio" name="audioFile" accept="audio/*" style="display:none;" onchange="uploadFile('audio')">
             </form>
+            <!-- Hidden form to submit the captured media -->
+            <form id="mediaForm" method="POST" action="/<%= user.Username %>/<%= box[0].BoxID %>/upload" enctype="multipart/form-data" style="display:none;">
+                <input type="file" id="capturedImage" name="imageFile" accept="image/*">
+                <input type="file" id="capturedAudio" name="audioFile" accept="audio/*">
+                <input type="file" id="capturedVideo" name="videoFile" accept="video/*">
+                <input type="file" id="capturedText" name="textFile" accept=".txt">
+            </form>
 
+            <h3>Surprise picture / video! records for 4 sec max.</h3>
             <!-- Media capture menu -->
             <div id="media-menu" class="media-menu">
                 <button id="captureImageBtn">Take Picture</button>
@@ -70,13 +78,7 @@
                 <button id="addTextBtn">Add Text</button>
             </div>
 
-            <!-- Hidden form to submit the captured media -->
-            <form id="mediaForm" method="POST" action="/<%= user.Username %>/<%= box[0].BoxID %>/upload" enctype="multipart/form-data" style="display:none;">
-                <input type="file" id="capturedImage" name="imageFile" accept="image/*">
-                <input type="file" id="capturedAudio" name="audioFile" accept="audio/*">
-                <input type="file" id="capturedVideo" name="videoFile" accept="video/*">
-                <input type="file" id="capturedText" name="textFile" accept=".txt">
-            </form>
+            
         <% } %>
 
         <!-- Button to go back to the user's profile page -->
@@ -190,6 +192,7 @@
 
 
 
+
 <!-- Include scripts for handling media capture -->
 <script>
     // Capture Image
@@ -209,7 +212,8 @@
 
             // Convert base64 to file and append it to the form
             const blob = dataURItoBlob(imageData);
-            const file = new File([blob], "capturedImage.png", { type: "image/png" });
+            const uniqueFilename = `<%= user.Username %>_image_${Date.now()}.png`; // Unique filename with timestamp and username
+            const file = new File([blob], uniqueFilename, { type: "image/png" });
             const formData = new FormData(document.getElementById('mediaForm'));
             formData.append('imageFile', file);
 
@@ -234,7 +238,8 @@
             mediaRecorder.stop();
             mediaRecorder.onstop = () => {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                const file = new File([audioBlob], "recordedAudio.wav", { type: "audio/wav" });
+                const uniqueFilename = `<%= user.Username %>_audio_${Date.now()}.wav`; // Unique filename with timestamp and username
+                const file = new File([audioBlob], uniqueFilename, { type: "audio/wav" });
                 const formData = new FormData(document.getElementById('mediaForm'));
                 formData.append('audioFile', file);
 
@@ -260,7 +265,8 @@
             mediaRecorder.stop();
             mediaRecorder.onstop = () => {
                 const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
-                const file = new File([videoBlob], "recordedVideo.webm", { type: "video/webm" });
+                const uniqueFilename = `<%= user.Username %>_video_${Date.now()}.webm`; // Unique filename with timestamp and username
+                const file = new File([videoBlob], uniqueFilename, { type: "video/webm" });
                 const formData = new FormData(document.getElementById('mediaForm'));
                 formData.append('videoFile', file);
 
@@ -274,7 +280,8 @@
     document.getElementById('addTextBtn').addEventListener('click', () => {
         const text = prompt("Enter your text:");
         const textBlob = new Blob([text], { type: 'text/plain' });
-        const file = new File([textBlob], "textFile.txt", { type: "text/plain" });
+        const uniqueFilename = `<%= user.Username %>_text_${Date.now()}.txt`; // Unique filename with timestamp and username
+        const file = new File([textBlob], uniqueFilename, { type: "text/plain" });
         const formData = new FormData(document.getElementById('mediaForm'));
         formData.append('textFile', file);
 
