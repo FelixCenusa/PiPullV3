@@ -8,9 +8,21 @@
 </head>
 <body>
     <!-- Main navigation bar -->
-    <nav>
-        <ul class="nav-links">
-            <!-- These links are visible to both logged-in and guest users -->
+    <nav class="navbar">
+        <div class="brand-title">
+            <a href="/">
+                <img src="/style/MeGit.png" alt="TimeToMove Logo" class="logo">
+            </a>
+            <a href="/">TimeToMove</a>
+        </div>
+        
+        <a href="javascript:void(0);" class="toggle-button">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </a>
+        <div class="navbar-links">
+            <ul>
             <li><a href="/">Home</a></li>
             <li><a href="/leaderboard">Leaderboard</a></li>
 
@@ -26,6 +38,7 @@
             <li><a href="/security">Security</a></li>
             <li><a href="/kanban">Kanban</a></li>
         </ul>
+        </div>
     </nav>
 
     <!-- Header Section -->
@@ -51,7 +64,6 @@
     <style>
         /* Global Styles */
         body {
-            /* Pastel gradient background */
             background: linear-gradient(to right, #ff9a9e, #fad0c4);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
