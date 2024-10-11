@@ -23,6 +23,11 @@ npm install node-cron
 ALTER TABLE Users
 ADD LastLoggedIn TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
+ALTER TABLE BoxSharedWith
+ADD ActualBoxPath VARCHAR(255) DEFAULT NULL;
+
+
+
 
     .env update with actual variables.
     cd v3TimeToMove

@@ -9,6 +9,8 @@ const QRCode = require('qrcode'); // Using qrcode without canvas
 const sanitizeHtml = require('sanitize-html');
 const passport = require('passport');
 const crypto = require('crypto');
+const axios = require('axios');
+
 
 // Middleware to check if the user is an admin by querying the database
 async function isAdmin(req, res, next) {
@@ -566,7 +568,7 @@ router.post('/login', async (req, res) => {
             };
 
             // Update the LastLoggedIn timestamp
-            await TimeToMove.updateLastLoggedIn(user.ID);
+            await TimeToMove.updateLastLoggedIn(result.userId);
 
 
             // Redirect the user to their profile page (e.g., /username)
