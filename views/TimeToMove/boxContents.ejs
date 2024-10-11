@@ -188,21 +188,7 @@
     <% } %>
 <% } %>
 
-<!-- Media capture menu -->
-<div id="media-menu" class="media-menu">
-    <button id="captureImageBtn">Take Picture</button>
-    <button id="recordAudioBtn">Record Audio</button>
-    <button id="recordVideoBtn">Record Video</button>
-    <button id="addTextBtn">Add Text</button>
-</div>
 
-<!-- Hidden form to submit the captured media -->
-<form id="mediaForm" method="POST" action="/<%= user.Username %>/<%= box[0].BoxID %>/upload" enctype="multipart/form-data" style="display:none;">
-    <input type="file" id="capturedImage" name="imageFile" accept="image/*">
-    <input type="file" id="capturedAudio" name="audioFile" accept="audio/*">
-    <input type="file" id="capturedVideo" name="videoFile" accept="video/*">
-    <input type="file" id="capturedText" name="textFile" accept=".txt">
-</form>
 
 <!-- Include scripts for handling media capture -->
 <script>
