@@ -33,15 +33,86 @@ async function isAdmin(req, res, next) {
 
 // Admin route protected by isAdmin middleware
 router.get('/admin', isAdmin, async (req, res) => {
+    // Record the page view
+    await TimeToMove.recordPageView(req, '/admin');
+    // Retrieve the view counts
+    const viewCounts = await TimeToMove.getPageViewCounts('/admin');
     try {
         // Fetch all users (or other admin-specific data)
-        const users = await TimeToMove.getAllUsers(); // Add this function in TimeToMove.js
-        res.render('TimeToMove/ADMIN.ejs', { users, session: req.session });
+        const users = await TimeToMove.getAllUsersAndDetails(); 
+        res.render('TimeToMove/ADMIN.ejs', { users, session: req.session, viewCounts });
     } catch (error) {
         console.error('Error loading admin page:', error);
         res.status(500).send('Error loading admin dashboard.');
     }
 });
+
+router.post('/admin/deleteUser', isAdmin, async (req, res) => {
+    const { userID } = req.body;
+
+    try {
+        const result = await TimeToMove.deleteUserByID(userID);
+        console.log("result delete user", result);
+        res.redirect('/admin');
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).send('Error deleting user.');
+    }
+});
+
+router.post('/admin/sendEmail', isAdmin, async (req, res) => {
+    const { recipients, subject, message } = req.body;
+
+    try {
+        let emails = [];
+
+        if (recipients === 'all') {
+            // Fetch all user emails
+            const users = await TimeToMove.getAllUserEmails();
+            emails = users.map(user => user.Email);
+        } else {
+            emails.push(recipients); // Single email selected
+        }
+
+        // Send emails and track the success
+        let success = true;
+        for (const email of emails) {
+            const sent = await TimeToMove.sendEmail(email, subject, message);
+            if (!sent) {
+                success = false; // If any email fails, mark as failure
+                break;
+            }
+        }
+
+        // If all emails were sent successfully, pass success message
+        if (success) {
+            res.render('TimeToMove/ADMIN.ejs', { 
+                message: 'Emails were sent successfully!', 
+                messageType: 'success', 
+                users: await TimeToMove.getAllUsers(), // Pass user data
+                session: req.session
+            });
+        } else {
+            res.render('TimeToMove/ADMIN.ejs', { 
+                message: 'Failed to send some or all emails.', 
+                messageType: 'error',
+                users: await TimeToMove.getAllUsers(),
+                session: req.session
+            });
+        }
+    } catch (error) {
+        console.error('Error sending emails:', error);
+        res.render('TimeToMove/ADMIN.ejs', { 
+            message: 'Error occurred while sending emails.', 
+            messageType: 'error',
+            users: await TimeToMove.getAllUsers(),
+            session: req.session
+        });
+    }
+});
+
+
+
 
 
 router.post('/updateUsername', async (req, res) => {
@@ -494,6 +565,10 @@ router.post('/login', async (req, res) => {
                 username: result.username
             };
 
+            // Update the LastLoggedIn timestamp
+            await TimeToMove.updateLastLoggedIn(user.ID);
+
+
             // Redirect the user to their profile page (e.g., /username)
             return res.redirect(`/${result.username}`);
         } else {
@@ -700,7 +775,7 @@ router.get('/leaderboard', async (req, res) => {
             totalMediaSize,
             totalUsers,
             viewCounts,
-            totalLinesOfCode  // Add this to pass to the view
+            totalLinesOfCode 
         });
     } catch (error) {
         console.error('Error loading leaderboard:', error);
@@ -829,6 +904,11 @@ async function renderProfilePage(req, res, viewType) {
         sortQuery = 'ORDER BY BoxID DESC';
     }
 
+    let isAdmin = false;
+    if (req.session.user) {
+        isAdmin = await TimeToMove.isUserAdmin(req.session.user.username);
+    }
+
     try {
         const user = await TimeToMove.getUserByUsername(username);
 
@@ -894,7 +974,8 @@ async function renderProfilePage(req, res, viewType) {
             sortOrder,
             viewCounts,
             viewType,
-            allUsernames  // Add this to pass to the view
+            isAdmin,
+            allUsernames  
         });
     } catch (error) {
         console.error('Error loading user profile:', error);

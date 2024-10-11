@@ -55,6 +55,11 @@
         <p class="greeting">It's great to see you back. Check out your profile and manage your boxes below.</p>
         <!-- Add the delete/edit button -->
         <button class="btn-manage-account" onclick="openAccountManagementModal()">Manage Account</button>
+        
+        <!-- Adding a button to go to ADMIN page only if the user isAdmin-->
+        <% if (isAdmin) { %>
+            <button class="btn-admin" onclick="window.location.href='/ADMIN'">ADMIN</button>
+        <% } %>
         <!-- Modal for managing account -->
         <div id="accountManagementModal" class="modal">
             <div class="modal-content">
@@ -1745,6 +1750,17 @@ button {
 
 .btn-manage-account:hover {
     background-color: #218838;
+    transform: scale(1.05);
+}
+
+.btn-admin {
+    background-color: #ca2c2c;
+    color: white;
+    margin: 10px 0;
+}
+
+.btn-admin:hover {
+    background-color: #6d2222;
     transform: scale(1.05);
 }
 

@@ -23,21 +23,21 @@
         </a>
         <div class="navbar-links">
             <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/leaderboard">Leaderboard</a></li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/leaderboard">Leaderboard</a></li>
 
-            <% if (session && session.user) { %>
-                <!-- Show only when user is logged in -->
-                <li><a href="/<%= session.user.username %>">My Profile</a></li>
-                <li><a href="/logout">Logout</a></li>
-            <% } else { %>
-                <!-- Show login/register links when user is not logged in -->
-                <li><a href="/create_user">Register</a></li>
-                <li><a href="/login">Login</a></li>
-            <% } %>
-            <li><a href="/security">Security</a></li>
-            <li><a href="/kanban">Kanban</a></li>
-        </ul>
+                <% if (session && session.user) { %>
+                    <!-- Show only when user is logged in -->
+                    <li><a href="/<%= session.user.username %>">My Profile</a></li>
+                    <li><a href="/logout">Logout</a></li>
+                <% } else { %>
+                    <!-- Show login/register links when user is not logged in -->
+                    <li><a href="/create_user">Register</a></li>
+                    <li><a href="/login">Login</a></li>
+                <% } %>
+                <li><a href="/security">Security</a></li>
+                <li><a href="/kanban">Kanban</a></li>
+            </ul>
         </div>
     </nav>
 
@@ -60,7 +60,6 @@
         </div>
     </header>
 
-
     <style>
         /* Global Styles */
         body {
@@ -70,59 +69,157 @@
             padding: 0;
             overflow-x: hidden;
         }
-
+    
         /* Navbar styles */
-        nav {
-            background-color: rgba(255, 255, 255, 0.8);
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
             position: sticky;
             top: 0;
             width: 100%;
             z-index: 100;
-            transition: background-color 0.3s;
+            padding: 10px 30px; /* Increased padding for better space utilization */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
-        .nav-links {
-            list-style: none;
+    
+        .brand-title a {
+            font-size: 1.5rem;
+            color: #333;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    
+        /* Adjust the brand title to align the logo and text properly */
+        .brand-title {
             display: flex;
-            justify-content: center;
-            padding: 10px 0;
+            align-items: center; /* Center vertically */
+            gap: 15px; /* Adds more space between logo and title */
+            padding: 5px; /* Optional: Add some padding to adjust overall spacing */
+        }
+    
+        /* Adjusted Rounded Logo Styling */
+        .brand-title img.logo {
+            height: 50px; /* Adjust as needed */
+            width: 50px;  /* Same height and width for perfect circle */
+            border-radius: 50%; /* Makes the logo rounded */
+            object-fit: cover; /* Ensures the image fits within the rounded border */
+            vertical-align: middle; /* Helps with centering */
+        }
+    
+        .navbar-links {
+            flex-grow: 1;
+            display: flex;
+            justify-content: flex-end;
+        }
+    
+        .navbar-links ul {
+            list-style: none;
             margin: 0;
+            padding: 0;
+            display: flex;
         }
-
-        .nav-links li {
-            margin: 0 15px;
+    
+        .navbar-links ul li {
+            margin: 0 20px; /* Increased space between the items */
         }
-
-        .nav-links a {
+    
+        .navbar-links a {
             text-decoration: none;
             color: #333;
             font-weight: bold;
-            transition: color 0.3s;
+            font-size: 1rem; /* Increased font size */
+            padding: 5px 5px; /* Added padding for larger clickable area */
+            transition: color 0.3s, transform 0.3s;
+            position: relative;
         }
-
-        .nav-links a:hover {
+    
+        .navbar-links a::after {
+            content: '';
+            position: absolute;
+            width: 0%;
+            height: 2px;
+            background-color: #007BFF;
+            left: 0;
+            bottom: -5px;
+            transition: width 0.3s;
+        }
+    
+        .navbar-links a:hover {
             color: #007BFF;
+            transform: translateY(-2px);
         }
-
+    
+        .navbar-links a:hover::after {
+            width: 100%;
+        }
+    
+        /* Toggle button */
+        .toggle-button {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+        }
+    
+        .toggle-button .bar {
+            width: 30px;
+            height: 3px;
+            background-color: #333;
+            margin: 5px 0;
+            transition: 0.3s;
+        }
+    
+        /* Responsive Styles */
+        @media (max-width: 1024px) {
+            .toggle-button {
+                display: flex;
+            }
+    
+            .navbar-links {
+                display: none;
+                width: 100%;
+                background-color: rgba(255, 255, 255, 0.9); /* Background for dropdown */
+            }
+    
+            .navbar {
+                flex-wrap: wrap;
+            }
+    
+            .navbar-links ul {
+                flex-direction: column;
+                width: 100%;
+            }
+    
+            .navbar-links ul li {
+                text-align: center;
+                margin: 10px 0;
+            }
+    
+            .navbar-links.active {
+                display: flex;
+            }
+        }
+    
         /* Header styles */
         header {
             text-align: center;
             padding: 50px 20px;
             animation: fadeIn 1s ease-in-out;
         }
-
+    
         header h1 {
             font-size: 48px;
             color: #333;
             margin-bottom: 10px;
         }
-
+    
         header p {
             font-size: 20px;
             color: #666;
         }
-
+    
         /* Section styles */
         section {
             padding: 60px 0;
@@ -130,179 +227,137 @@
             transform: translateY(20px);
             animation: slideUp 1s forwards;
         }
-
+    
         section:nth-of-type(even) {
             background-color: rgba(255, 255, 255, 0.8);
         }
-
+    
         section:nth-of-type(odd) {
             background-color: rgba(255, 255, 255, 0.6);
         }
-
+    
         .container {
             width: 90%;
             max-width: 1200px;
             margin: 0 auto;
             text-align: center;
         }
-
+    
         section h2 {
             font-size: 36px;
             color: #333;
             margin-bottom: 20px;
         }
-
+    
         section p, section ul {
             font-size: 18px;
             color: #555;
         }
-
+    
         section ul {
             list-style: none;
             padding: 0;
         }
-
+    
         section ul li {
             margin: 10px 0;
             position: relative;
             padding-left: 25px;
             text-align: left;
         }
-
+    
         section ul li::before {
             content: '•';
             position: absolute;
             left: 0;
             color: #007BFF;
         }
-
+    
         section a {
             color: #007BFF;
             text-decoration: none;
             transition: color 0.3s;
         }
-
+    
         section a:hover {
             color: #0056b3;
             text-decoration: underline;
         }
-
+    
         /* Footer styles */
         footer {
             background-color: rgba(255, 255, 255, 0.9);
             padding: 20px 0;
             text-align: center;
         }
-
+    
         footer p {
             margin: 5px 0;
             color: #777;
         }
-
+    
         footer a {
             color: #007BFF;
             text-decoration: none;
             transition: color 0.3s;
         }
-
+    
         footer a:hover {
             color: #0056b3;
             text-decoration: underline;
         }
-
+    
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
         }
-
+    
         @keyframes slideUp {
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-
-        /* Responsive Styles */
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 36px;
-            }
-
-            section h2 {
-                font-size: 28px;
-            }
-
-            .nav-links {
-                flex-direction: column;
-            }
-
-            .nav-links li {
-                margin: 10px 0;
-            }
+    
+        /* View Counts Section */
+        .view-counts {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+            color: #fff;
+            width: 25%;
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-
-        @media (max-width: 480px) {
-            header {
-                padding: 30px 10px;
-            }
-
-            header h1 {
-                font-size: 28px;
-            }
-
-            header p {
-                font-size: 16px;
-            }
-
-            section {
-                padding: 40px 0;
-            }
-
-            section p, section ul {
-                font-size: 16px;
-            }
+    
+        .view-counts p {
+            margin: 5px 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #f1f1f1;
         }
-
-/* View Counts Section */
-.view-counts {
-    background-color: rgba(0, 0, 0, 0.5); /* Transparent background */
-    padding: 10px;
-    text-align: center;
-    border-radius: 5px;
-    color: #fff; /* White text for contrast */
-    width: 25%;  /* Reduce width */
-    max-width: 600px;  /* Set a maximum width */
-    margin: 0 auto; /* Center the box */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add a shadow for a cleaner look */
-}
-
-.view-counts p {
-    margin: 5px 0;
-    font-size: 16px;
-    font-weight: bold; /* Thicker text */
-    color: #f1f1f1;
-}
-
-/* Toggle Button */
-.toggle-btn {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    transition: background-color 0.2s ease-in-out;
-}
-
-.toggle-btn:hover {
-    background-color: #0056b3;
-}
-
-
-
+    
+        /* Toggle Button */
+        .toggle-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            transition: background-color 0.2s ease-in-out;
+        }
+    
+        .toggle-btn:hover {
+            background-color: #0056b3;
+        }
     </style>
+    
+
     <script>
         // Intersection Observer for section animations
         document.addEventListener('DOMContentLoaded', () => {
@@ -324,19 +379,27 @@
             sections.forEach(section => {
                 observer.observe(section);
             });
+
+            // Toggle button for navbar
+            const toggleButton = document.querySelector('.toggle-button');
+            const navbarLinks = document.querySelector('.navbar-links');
+
+            toggleButton.addEventListener('click', () => {
+                navbarLinks.classList.toggle('active');
+            });
+
+            // Toggle View Counts
+            const toggleBtn = document.getElementById('toggle-view-counts-btn');
+            const viewCountsSection = document.getElementById('view-counts-section');
+
+            toggleBtn.addEventListener('click', function () {
+                if (viewCountsSection.style.display === 'none' || viewCountsSection.style.display === '') {
+                    viewCountsSection.style.display = 'block';
+                } else {
+                    viewCountsSection.style.display = 'none';
+                }
+            });
         });
-
-        document.addEventListener("DOMContentLoaded", function () {
-        const toggleBtn = document.getElementById('toggle-view-counts-btn');
-        const viewCountsSection = document.getElementById('view-counts-section');
-
-        toggleBtn.addEventListener('click', function () {
-            if (viewCountsSection.style.display === 'none' || viewCountsSection.style.display === '') {
-                viewCountsSection.style.display = 'block';
-            } else {
-                viewCountsSection.style.display = 'none';
-            }
-        });
-    });
-
     </script>
+</body>
+</html>

@@ -2,26 +2,89 @@
 
 <h1>Admin Dashboard</h1>
 
-<!-- Display list of all users -->
+<!-- Display success or error message -->
+<% if (typeof message !== 'undefined') { %>
+    <div class="alert <%= messageType === 'success' ? 'alert-success' : 'alert-error' %>">
+        <%= message %>
+    </div>
+<% } %>
+
+<!-- Table of users -->
 <table>
     <thead>
         <tr>
-            <th>ID</th>
             <th>Username</th>
             <th>Email</th>
             <th>Is Admin</th>
+            <th>File Count</th>
+            <th>File Names</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
         <% users.forEach(function(user) { %>
             <tr>
-                <td><%= user.ID %></td>
                 <td><%= user.Username %></td>
                 <td><%= user.Email %></td>
                 <td><%= user.IsAdmin ? 'Yes' : 'No' %></td>
+                <td><%= user.FileCount %></td>
+                <td>
+                    <% if (user.FileNames) { %>
+                        <% user.FileNames.split(',').forEach(function(file) { %>
+                            <p><%= file %></p>
+                        <% }); %>
+                    <% } else { %>
+                        <p>No files</p>
+                    <% } %>
+                </td>
+                <td>
+                    <!-- Delete User Button -->
+                    <form action="/admin/deleteUser" method="POST" style="display:inline;">
+                        <input type="hidden" name="userID" value="<%= user.ID %>">
+                        <button type="submit" onclick="return confirm('Are you sure you want to delete this user?');">Delete</button>
+                    </form>
+                </td>
             </tr>
-        <% }) %>
+        <% }); %>
     </tbody>
 </table>
 
+<!-- Form to send emails -->
+<h2>Send Email to Users</h2>
+<form action="/admin/sendEmail" method="POST">
+    <label for="recipients">Recipients:</label>
+    <select name="recipients" id="recipients">
+        <option value="all">All Users</option>
+        <% users.forEach(function(user) { %>
+            <option value="<%= user.Email %>"><%= user.Username %> (<%= user.Email %>)</option>
+        <% }); %>
+    </select>
+
+    <label for="subject">Subject:</label>
+    <input type="text" name="subject" id="subject" required>
+
+    <label for="message">Message:</label>
+    <textarea name="message" id="message" rows="5" required></textarea>
+
+    <button type="submit">Send Email</button>
+</form>
+
 <%- include('./../partials/footer.ejs') %>
+
+<style>
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+</style>

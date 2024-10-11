@@ -1341,7 +1341,7 @@ async function insertFakeData() {
 
     try {
         // Insert 20 users
-        for (let i = 1; i <= 20; i++) {
+        for (let i = 1; i <= 10; i++) {
             const username = `user${i}`;
             const email = `user${i}@gmail.com`;
             const passwordHash = `password${i}`; // Just a simple password hash for testing
@@ -1360,7 +1360,7 @@ async function insertFakeData() {
             const userID = userResult[0]?.insertId;
 
             // Insert 10 boxes for each user
-            for (let j = 1; j <= 10; j++) {
+            for (let j = 1; j <= 5; j++) {
                 const TitleChosen = `box${j}_user${i}`; // Box label
                 const isBoxPublic = j % 2 === 0; // Alternate between public and private boxes
                 const nrOfFiles = 10; // Each box has 10 files
@@ -1377,7 +1377,7 @@ async function insertFakeData() {
                 const boxID = boxResult[0]?.insertId;
 
                 // Insert 10 media files for each box
-                for (let k = 1; k <= 10; k++) {
+                for (let k = 1; k <= 3; k++) {
                     const mediaType = (k % 2 === 0) ? 'jpg' : 'mp3'; // Alternate between image and audio
                     const mediaSize = random(10000, 1000000); // Random size between 100KB and 1MB
                     const mediaPath = `uploads/user${i}/box${j}_user${i}/file${k}.${mediaType}`; // Path for media file
@@ -1820,6 +1820,7 @@ async function deleteUserByUsername(username) {
             JOIN Users u ON b.UserID = u.ID
             WHERE u.Username = ?`;
         await db.query(deleteBoxContentsSql, [username]);
+        console.log('Deleted box contents for user:', username);
 
         // Delete all boxes shared to and from this user
         const deleteSharedBoxesSql = `
@@ -1828,6 +1829,7 @@ async function deleteUserByUsername(username) {
             JOIN Users u ON b.UserID = u.ID
             WHERE u.Username = ? OR bs.SharedWithUserID = (SELECT ID FROM Users WHERE Username = ?)`;
         await db.query(deleteSharedBoxesSql, [username, username]);
+        console.log('Deleted shared boxes for user:', username);
 
         // Delete all associated boxes
         const deleteBoxesSql = `
@@ -1835,10 +1837,12 @@ async function deleteUserByUsername(username) {
             JOIN Users u ON b.UserID = u.ID
             WHERE u.Username = ?`;
         await db.query(deleteBoxesSql, [username]);
+        console.log('Deleted boxes for user:', username);
 
         // Delete the user
         const deleteUserSql = `DELETE FROM Users WHERE Username = ?`;
         await db.query(deleteUserSql, [username]);
+        console.log('Deleted user:', username);
 
         return true;
     } catch (error) {
@@ -1917,6 +1921,136 @@ async function getUserByID(userID) {
     }
 }
 
+// Function to delete a user by ID
+async function deleteUserByID(userID) {
+    // just call deleteUserByUsername
+    const db = await mysql.createConnection(config);
+    try {
+        const userSql = `SELECT Username FROM Users WHERE ID = ?`;
+        const userResult = await db.query(userSql, [userID]);
+        const username = userResult[0].Username;
+        console.log(`Deleting user by ID: ${userID}`);
+        console.log("userResult[0].Username", userResult[0].Username);
+
+
+        return deleteUserByUsername(username);
+    } catch (error) {
+        console.error('Error deleting user by ID:', error);
+        return false;
+    } finally {
+        await db.end();
+    }
+}
+
+// Function to get all user emails
+async function getAllUserEmails() {
+    const db = await mysql.createConnection(config);
+
+    try {
+        const sql = `SELECT Email FROM Users`;
+        const users = await db.query(sql);
+        return users;
+    } catch (error) {
+        console.error('Error fetching user emails:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+
+// Create a function to send emails
+async function sendEmail(to, subject, message){
+    try {
+        console.log('Sending email to:', to);
+        // Email content
+        let mailOptions = {
+            from: `felixdevmailer@gmail.com`, // Sender name and email
+            to, // The email address to send to
+            subject, // Email subject
+            html: `<p>${message}</p>` // Use HTML format
+        };
+
+        // Send the email
+        let info = await transporter.sendMail(mailOptions);
+        console.log('Message sent: %s', info.messageId);
+        return true;
+    } catch (error) {
+        console.error('Error sending email:', error);
+        return false;
+    }
+};
+
+// Function to get all users, their file count, and file names
+async function getAllUsersAndDetails() {
+    const db = await mysql.createConnection(config);
+
+    try {
+        // Query to fetch all users, their file counts, and file names
+        const sql = `
+            SELECT 
+                u.ID, 
+                u.Username, 
+                u.Email, 
+                u.IsAdmin, 
+                COUNT(bm.MediaID) AS FileCount,  -- Count the number of files
+                GROUP_CONCAT(bm.MediaPath) AS FileNames -- Get file names as a concatenated string
+            FROM Users u
+            LEFT JOIN Boxes b ON u.ID = b.UserID
+            LEFT JOIN BoxMedia bm ON b.BoxID = bm.BoxID
+            GROUP BY u.ID  -- Group by user to get unique results
+        `;
+
+        const users = await db.query(sql);
+        return users;
+    } catch (error) {
+        console.error('Error fetching users and their details:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+async function updateLastLoggedIn(userID) {
+    const db = await mysql.createConnection(config);
+
+    try {
+        const sql = `UPDATE Users SET LastLoggedIn = NOW() WHERE ID = ?`;
+        await db.query(sql, [userID]);
+    } catch (error) {
+        console.error('Error updating LastLoggedIn:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+// Function to get users who have been inactive for at least 90 days
+async function getInactiveUsers() {
+    const db = await mysql.createConnection(config);
+
+    try {
+        // Query to fetch users who have been inactive for at least 90 days
+        const sql = `
+            SELECT 
+                ID, 
+                Username, 
+                Email, 
+                DATEDIFF(NOW(), LastLoggedIn) AS daysInactive
+            FROM Users
+            WHERE DATEDIFF(NOW(), LastLoggedIn) >= 90
+        `;
+        
+        const inactiveUsers = await db.query(sql);
+        return inactiveUsers;
+    } catch (error) {
+        console.error('Error fetching inactive users:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
 module.exports = {
     createUser,
     getAllUsers,
@@ -1971,6 +2105,12 @@ module.exports = {
     sendDeleteConfirmationEmail,
     getAllUsers,
     getUserByID,
+    deleteUserByID,
+    getAllUserEmails,
+    sendEmail,
+    getAllUsersAndDetails,
+    updateLastLoggedIn,
+    getInactiveUsers,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,
