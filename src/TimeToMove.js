@@ -1695,20 +1695,22 @@ async function shareBoxWithUser(boxID, shareWith, shareCode, actualBoxPath) {
         const username = shareWith;
 
         // Prepare the email message, now using actualBoxPath for the URL
+        // concatinate felixcenusa.com before the actualboxpath to the acualboxpath
+        let actualboxURL = "https://felixcenusa.com" + actualBoxPath;
         let emailMessage;
         if (shareCode !== '0') {
             emailMessage = `
                 <div style="font-family: Arial, sans-serif; color: #333;">
                     <h2 style="color: #4CAF50;">A box named "<span style="color: #FF5722;">${boxName}</span>" has been shared with you by <span style="color: #2196F3;">${username}</span>.</h2>
                     <p>Login to see the box or use the <strong>Share code: <span style="color: #FF9800;">${shareCode}</span></strong> when opening the box from this link:</p>
-                    <a href="${actualBoxPath}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
+                    <a href="${actualboxURL}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
                 </div>`;
         } else {
             emailMessage = `
                 <div style="font-family: Arial, sans-serif; color: #333;">
                     <h2 style="color: #4CAF50;">A box named "<span style="color: #FF5722;">${boxName}</span>" has been shared with you by <span style="color: #2196F3;">${username}</span>.</h2>
                     <p>The 6-digit code has not been shared. Please ask the user for the code if needed.</p>
-                    <a href="${actualBoxPath}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
+                    <a href="${actualboxURL}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
                 </div>`;
         }
 
