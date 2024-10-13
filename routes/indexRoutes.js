@@ -53,6 +53,14 @@ router.get('/readme', async (req, res) => {
     });
 });
 
+router.get('/newfiletest', async (req, res) => {
+    // Record the page view
+    await TimeToMove.recordPageView(req, '/newfiletest');
+    // Retrieve the view counts
+    const viewCounts = await TimeToMove.getPageViewCounts('/newfiletest');
+    res.render('TimeToMove/newfiletest.ejs', { session: req.session, viewCounts });
+});
+
 router.get('/statistics', async (req, res) => {
     try {
         // Fetch the leaderboard data and statistics from TimeToMove.js
