@@ -1,0 +1,255 @@
+<%- include('./../partials/header.ejs') %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Architecture Page</title>
+</head>
+<body>
+    <h1 style="text-align: center;">Server Statistics</h1>
+    <div class="big-text">
+        <div style="text-align: center; font-family: Arial, sans-serif; color: black;">
+            <span style="font-size: 1em; margin: 5px 0; display: block; color: black;">
+                Total Uptime Since Start: 
+                <strong style="color: #00ff00;" id="total-uptime">
+                    <%= (() => {
+                        const days = Math.floor(uptimeStats.totalUptime / 86400);
+                        const hours = Math.floor((uptimeStats.totalUptime % 86400) / 3600);
+                        const minutes = Math.floor((uptimeStats.totalUptime % 3600) / 60);
+                        const seconds = Math.round(uptimeStats.totalUptime % 60);
+                        let formattedTime = '';
+                        if (days > 0) formattedTime += `${days} days `;
+                        if (hours > 0) formattedTime += `${hours} hours `;
+                        if (minutes > 0) formattedTime += `${minutes} minutes `;
+                        formattedTime += `${seconds} seconds`;
+                        return formattedTime;
+                    })() %>
+                </strong>
+            </span>
+            <span style="font-size: 1em; margin: 5px 0; display: block; color: black;">
+                Uptime Since Last Downtime: 
+                <strong style="color: #00ff00;" id="uptime-since-last-downtime">
+                    <%= (() => {
+                        const days = Math.floor(uptimeStats.uptimeSinceLastDowntime / 86400);
+                        const hours = Math.floor((uptimeStats.uptimeSinceLastDowntime % 86400) / 3600);
+                        const minutes = Math.floor((uptimeStats.uptimeSinceLastDowntime % 3600) / 60);
+                        const seconds = Math.round(uptimeStats.uptimeSinceLastDowntime % 60);
+                        let formattedTime = '';
+                        if (days > 0) formattedTime += `${days} days `;
+                        if (hours > 0) formattedTime += `${hours} hours `;
+                        if (minutes > 0) formattedTime += `${minutes} minutes `;
+                        formattedTime += `${seconds} seconds`;
+                        return formattedTime;
+                    })() %>
+                </strong>
+            </span>
+            <span style="font-size: 1em; margin: 5px 0; display: block; color: black;">
+                Amount of Time Server Was Down Last Time: 
+                <strong style="color: #ff0000;" id="last-downtime">
+                    <%= (() => {
+                        const days = Math.floor(uptimeStats.lastDowntime / 86400);
+                        const hours = Math.floor((uptimeStats.lastDowntime % 86400) / 3600);
+                        const minutes = Math.floor((uptimeStats.lastDowntime % 3600) / 60);
+                        const seconds = Math.round(uptimeStats.lastDowntime % 60);
+                        let formattedTime = '';
+                        if (days > 0) formattedTime += `${days} days `;
+                        if (hours > 0) formattedTime += `${hours} hours `;
+                        if (minutes > 0) formattedTime += `${minutes} minutes `;
+                        formattedTime += `${seconds} seconds`;
+                        return formattedTime;
+                    })() %>
+                </strong>
+            </span>
+            <span style="font-size: 1em; margin: 5px 0; display: block; color: black;">
+                Uptime Percentage Since Start: 
+                <strong style="color: #00ff00;"><%= uptimeStats.uptimePercentage.toFixed(2) %>%</strong>
+            </span>
+        </div>
+         <!-- Button to show the stats -->
+    <button id="view-stats-button" class="btn-stats"><strong>View Total Project Stats</strong></button>
+    <!-- Stats section, hidden by default -->
+    <div id="stats-section" class="leaderboard-stats" style="display: none;">
+        <p><strong>Total Users:</strong> <%= totalUsers %></p>
+        <p><strong>Total Files Uploaded:</strong> <%= totalFilesUploaded %></p>
+        <p><strong>Total Media Size:</strong> 
+        <% if (totalMediaSize > 1024 * 1024 * 1024) { %>
+            <%= (totalMediaSize / (1024 * 1024 * 1024)).toFixed(2) %> GB
+        <% } else { %>
+            <%= (totalMediaSize / (1024 * 1024)).toFixed(2) %> MB
+        <% } %>
+        <i> / 53 GB</i>
+        </p>
+        <p>- - - - - - - - - -</p>
+        <p><strong>Average Files per User:</strong><%= (totalFilesUploaded / totalUsers).toFixed(2) %></p>
+        <p><strong>Average Media Size per User:</strong> <%= ((totalMediaSize / (1024 * 1024)).toFixed(2) / totalUsers).toFixed(2) %> MB</p>
+        <p><strong>Average Files per MB:</strong> <%= (totalFilesUploaded / (totalMediaSize / (1024 * 1024))).toFixed(2) %></p>
+        <p>- - - - - - - - - -</p>
+        <p class="total-lines" style="font-size: 1.2em;"><strong>Total Lines of Code:</strong> <%= totalLinesOfCode %></p>
+    </div>
+        <h2 style="text-align: center; font-family: Arial, sans-serif; color: #333;">Uptime and Downtime History</h2>
+    <table border="1">
+        <table style="width: 90%; margin: 0 auto; border-collapse: collapse; font-size: 0.6em;">
+            <tr>
+                <th style="padding: 10px; background-color: #f2f2f2; color: black;">Type</th>
+                <th style="padding: 10px; background-color: #f2f2f2; color: black;">Start Time</th>
+                <th style="padding: 10px; background-color: #f2f2f2; color: black;">End Time</th>
+                <th style="padding: 10px; background-color: #f2f2f2; color: black;">Duration (seconds)</th>
+            </tr>
+            <% uptimeStats.uptimeDowntimePeriods.forEach(function(period) { %>
+                <tr>
+                    <td style="padding: 10px; background-color: <%= period.type === 'uptime' ? '#e0ffe0' : '#ffe0e0' %>;"><%= period.type === 'uptime' ? 'Uptime' : 'Downtime' %></td>
+                    <td style="padding: 10px; background-color: <%= period.type === 'uptime' ? '#e0ffe0' : '#ffe0e0' %>;"><%= period.startTime %></td>
+                    <td style="padding: 10px; background-color: <%= period.type === 'uptime' ? '#e0ffe0' : '#ffe0e0' %>;"><%= period.endTime %></td>
+                    <td style="padding: 10px; background-color: <%= period.type === 'uptime' ? '#e0ffe0' : '#ffe0e0' %>;"><%= Math.round(period.duration) %></td>
+                </tr>
+            <% }) %>
+        </table>
+    </table>
+   
+   
+</body>
+</html>
+
+<script>
+    function updateCounters() {
+        const totalUptimeElement = document.getElementById('total-uptime');
+        const uptimeSinceLastDowntimeElement = document.getElementById('uptime-since-last-downtime');
+
+        let totalUptime = <%= uptimeStats.totalUptime %>;
+        let uptimeSinceLastDowntime = <%= uptimeStats.uptimeSinceLastDowntime %>;
+
+        setInterval(() => {
+            totalUptime++;
+            uptimeSinceLastDowntime++;
+
+            totalUptimeElement.innerHTML = formatTime(totalUptime);
+            uptimeSinceLastDowntimeElement.innerHTML = formatTime(uptimeSinceLastDowntime);
+        }, 1000);
+    }
+
+    function formatTime(seconds) {
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = Math.round(seconds % 60);
+
+        let formattedTime = '';
+        if (days > 0) formattedTime += `${days} days `;
+        if (hours > 0) formattedTime += `${hours} hours `;
+        if (minutes > 0) formattedTime += `${minutes} minutes `;
+        formattedTime += `${remainingSeconds} seconds`;
+
+        return formattedTime;
+    }
+
+    window.onload = updateCounters;
+</script>
+<script>
+    // JavaScript to toggle the display of the stats
+    document.getElementById("view-stats-button").addEventListener("click", function() {
+        const stats = document.getElementById("stats-section");
+        if (stats.style.display === "none") {
+            stats.style.display = "block";  // Show the stats
+            this.innerText = "Hide Total Project Stats";  // Change button text
+        } else {
+            stats.style.display = "none";  // Hide the stats
+            this.innerText = "View Total Project Stats";  // Reset button text
+        }
+    });
+</script>
+
+<style>
+    .big-text {
+        font-size: 2em;
+    }
+    .uptime-row {
+        background-color: #e0ffe0; /* Light green */
+    }
+    .downtime-row {
+        background-color: #ffe0e0; /* Light red */
+    }
+    /* Over-the-top Button for viewing/hiding project stats */
+    .btn-stats {
+        display: block;
+        margin: 20px auto;
+        padding: 15px 40px;
+        background: linear-gradient(45deg, #ff0066, #ffcc00, #33ccff, #ff66ff);
+        background-size: 300% 300%;
+        color: white;
+        border-radius: 50px;
+        border: 3px solid #fff;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2), 0 0 15px rgba(255, 0, 150, 0.5), 0 0 25px rgba(255, 204, 0, 0.5), 0 0 50px rgba(51, 204, 255, 0.5);
+        transition: all 0.5s ease-in-out;
+        animation: glowing 3s infinite ease-in-out, backgroundShift 5s infinite linear;
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
+    }
+
+    .btn-stats:hover {
+        background-position: 100% 100%;
+        transform: scale(1.2) rotate(10deg);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 0, 150, 0.6), 0 0 40px rgba(255, 204, 0, 0.6), 0 0 70px rgba(51, 204, 255, 0.6);
+    }
+
+    /* Glowing neon-like animation */
+    @keyframes glowing {
+        0% {
+            box-shadow: 0 0 10px rgba(255, 0, 150, 0.5), 0 0 20px rgba(255, 204, 0, 0.5), 0 0 30px rgba(51, 204, 255, 0.5);
+        }
+        50% {
+            box-shadow: 0 0 20px rgba(255, 0, 150, 0.8), 0 0 40px rgba(255, 204, 0, 0.8), 0 0 60px rgba(51, 204, 255, 0.8);
+        }
+        100% {
+            box-shadow: 0 0 10px rgba(255, 0, 150, 0.5), 0 0 20px rgba(255, 204, 0, 0.5), 0 0 30px rgba(51, 204, 255, 0.5);
+        }
+    }
+
+    /* Shift background color for a dynamic effect */
+    @keyframes backgroundShift {
+        0% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    /* Styling for the stats section */
+    .leaderboard-stats {
+        background-color: rgba(255, 255, 255, 0.8); /* Light semi-transparent background */
+        padding: 15px;
+        margin-top: 15px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 40%; /* Restrict the width */
+        margin: 15px auto; /* Center the container */
+    }
+
+    /* Cool rainbow text effect with cycling colors */
+    .leaderboard-stats p {
+        margin: 8px 0;
+        font-size: 16px;
+        font-weight: bold;
+        background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+        -webkit-background-clip: text;
+        color: transparent;
+        animation: rainbow-text 5s ease infinite, color-cycle 5s ease infinite;
+        background-size: 300%;
+    }
+
+    /* Keyframes for background gradient animation */
+    @keyframes rainbow-text {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+</style>
+
+<%- include('./../partials/footer.ejs') %>

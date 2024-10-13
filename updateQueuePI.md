@@ -28,7 +28,13 @@ npm install pdfkit
 
 //ALTER TABLE BoxSharedWith
 //ADD ActualBoxPath VARCHAR(255) DEFAULT NULL;
-
+// CREATE TABLE systemUptimeDetails (
+//     id INT AUTO_INCREMENT PRIMARY KEY,
+//     serverStartedAt DATETIME NOT NULL,
+//     serverStoppedAt DATETIME DEFAULT NULL,
+//     serverLastAliveAt DATETIME NOT NULL,
+//     totalTimeInThisRow INT DEFAULT NULL
+// );
 
 
 

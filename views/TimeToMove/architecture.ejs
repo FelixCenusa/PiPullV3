@@ -63,18 +63,7 @@
         <h1>TimeToMove</h1>
         <p>Move your files with ease</p>
 
-        <!-- Toggle Button for View Counts -->
-        <button id="toggle-view-counts-btn" class="toggle-btn">Toggle View Counts</button>
-
-        <!-- View Counts Section -->
-        <div id="view-counts-section" class="view-counts" style="display: none;">
-            <% if (typeof viewCounts !== 'undefined') { %>
-                <p><strong>Total Views On This Page:</strong> <%= viewCounts.totalViews %></p>
-                <p><strong>Unique Views On This Page:</strong> <%= viewCounts.uniqueViews %></p>
-                <p><strong>Total Views On This WEBSITE:</strong> <%= viewCounts.totalSiteViews %></p>
-                <p><strong>Unique Views On This WEBSITE:</strong> <%= viewCounts.uniqueSiteViews %></p>
-            <% } %>
-        </div>
+       
     </header>
 
     <style>
@@ -375,48 +364,288 @@
     </style>
     
 
-    <script>
-        // Intersection Observer for section animations
-        document.addEventListener('DOMContentLoaded', () => {
-            const sections = document.querySelectorAll('section');
-            const options = {
-                threshold: 0.1
-            };
 
-            const observer = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if(entry.isIntersecting){
-                        entry.target.style.animationDelay = '0s';
-                        entry.target.style.animation = 'slideUp 1s forwards';
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, options);
-
-            sections.forEach(section => {
-                observer.observe(section);
-            });
-
-            // Toggle button for navbar
-            const toggleButton = document.querySelector('.toggle-button');
-            const navbarLinks = document.querySelector('.navbar-links');
-
-            toggleButton.addEventListener('click', () => {
-                navbarLinks.classList.toggle('active');
-            });
-
-            // Toggle View Counts
-            const toggleBtn = document.getElementById('toggle-view-counts-btn');
-            const viewCountsSection = document.getElementById('view-counts-section');
-
-            toggleBtn.addEventListener('click', function () {
-                if (viewCountsSection.style.display === 'none' || viewCountsSection.style.display === '') {
-                    viewCountsSection.style.display = 'block';
-                } else {
-                    viewCountsSection.style.display = 'none';
-                }
-            });
-        });
-    </script>
 </body>
 </html>
+
+<div class="architecture-container">
+    <!-- Express -->
+    <div class="box" id="express" style="top: 8%; left: 15%;">
+      <i class="fab fa-node-js"></i>
+      <p>Express: Handles server-side routing and middleware.</p>
+    </div>
+  
+    <!-- MySQL -->
+    <div class="box" id="mysql" style="top: 42%; left: 40%;">
+      <i class="fas fa-database"></i>
+      <p>MySQL: Used for data storage and retrieval.</p>
+    </div>
+  
+    <!-- Passport.js -->
+    <div class="box" id="passport" style="top: 8%; left: 2.5%;">
+      <i class="fas fa-user-shield"></i>
+      <p>Passport.js: User authentication.</p>
+    </div>
+  
+    <!-- Axios -->
+    <div class="box" id="axios" style="top: 25%; left: 20%;">
+      <i class="fas fa-cloud-download-alt"></i>
+      <p>Axios: Making HTTP requests.</p>
+    </div>
+  
+    <!-- Lodash -->
+    <div class="box" id="lodash" style="top: 50%; left: 15%;">
+      <i class="fas fa-code"></i>
+      <p>Lodash: Utility functions.</p>
+    </div>
+  
+    <!-- BcryptJS -->
+    <div class="box" id="bcryptjs" style="top: 25%; left: 40%;">
+      <i class="fas fa-lock"></i>
+      <p>BcryptJS: Hashing passwords.</p>
+    </div>
+  
+    <!-- Sanitize-HTML -->
+    <div class="box" id="sanitize-html" style="top: 50%; left: 30%;">
+      <i class="fas fa-shield-alt"></i>
+      <p>Sanitize-HTML: Preventing XSS attacks.</p>
+    </div>
+  
+    <!-- Multer -->
+    <div class="box" id="multer" style="top: 8%; left: 50%;">
+      <i class="fas fa-file-upload"></i>
+      <p>Multer: Handling file uploads.</p>
+    </div>
+  
+    <!-- Archiver -->
+    <div class="box" id="archiver" style="top: 42%; left: 50%;">
+      <i class="fas fa-file-archive"></i>
+      <p>Archiver: Creating zip files.</p>
+    </div>
+  
+    <!-- Nodemailer -->
+    <div class="box" id="nodemailer" style="top: 67%; left: 40%;">
+      <i class="fas fa-envelope"></i>
+      <p>Nodemailer: Sending emails.</p>
+    </div>
+  
+    <!-- Dotenv -->
+    <div class="box" id="dotenv" style="top: 67%; left: 25%;">
+      <i class="fas fa-cog"></i>
+      <p>Dotenv: Managing environment variables.</p>
+    </div>
+  
+    <!-- Node-Cron -->
+    <div class="box" id="node-cron" style="top: 42%; left: 60%;">
+      <i class="fas fa-clock"></i>
+      <p>Node-Cron: Scheduling tasks.</p>
+    </div>
+  
+    <!-- PDFKit -->
+    <div class="box" id="pdfkit" style="top: 8%; left: 65%;">
+      <i class="fas fa-file-pdf"></i>
+      <p>PDFKit: Generating PDF documents.</p>
+    </div>
+  
+    <!-- Server -->
+    <div class="box" id="server" style="top: 25%; left: 70%;">
+      <i class="fas fa-server"></i>
+      <p>Server: Running node index.js with PM2 to keep it running.</p>
+    </div>
+  
+    <!-- Raspberry Pi -->
+    <div class="box" id="raspberry-pi" style="top: 58%; left: 70%;">
+      <i class="fas fa-microchip"></i>
+      <p>Raspberry Pi: Boots up and runs automatically if it crashes.</p>
+    </div>
+  
+    <!-- Cloudflare -->
+    <div class="box" id="cloudflare" style="top: 50%; left: 80%;">
+      <i class="fas fa-cloud"></i>
+      <p>Cloudflare: Tunnel to make the server public.</p>
+    </div>
+  
+    <!-- Domain -->
+    <div class="box" id="domain" style="top: 75%; left: 80%;">
+      <i class="fas fa-globe"></i>
+      <p>Domain: felixcenusa.com to access the web app publicly.</p>
+    </div>
+  </div>
+  
+  <canvas id="connection-canvas" width="100%" height="100%"></canvas>
+
+<!-- Include jQuery, jQuery UI, and Font Awesome CSS -->
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+/>
+<link
+  rel="stylesheet"
+  href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css"
+/>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+<!-- Custom CSS -->
+<style>
+  .architecture-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+  }
+
+  .box {
+    position: absolute;
+    width: 150px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    text-align: center;
+    padding: 10px;
+    cursor: move;
+    z-index: 1;
+  }
+
+  .box i {
+    font-size: 48px;
+    margin-bottom: 10px;
+  }
+
+  .box p {
+    font-size: 14px;
+  }
+
+  .box:hover {
+    background-color: #f0f0f0;
+  }
+
+  #connection-canvas {
+    position: absolute;
+    top: 300px;
+    left: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .box {
+      width: 120px;
+    }
+
+    .box i {
+      font-size: 36px;
+    }
+
+    .box p {
+      font-size: 12px;
+    }
+  }
+
+  /* Hover Effects */
+  .box {
+    transition: background-color 0.3s, transform 0.3s;
+  }
+
+  .box:hover {
+    background-color: #e0e0e0;
+    transform: scale(1.05);
+  }
+</style>
+
+<!-- Custom JavaScript -->
+<script>
+  $(function () {
+    // Make boxes draggable
+    $('.box').draggable({
+      drag: function () {
+        drawConnections();
+      },
+      stop: function () {
+        drawConnections();
+      },
+    });
+
+    // Function to draw connections
+    function drawConnections() {
+      var canvas = document.getElementById('connection-canvas');
+      var context = canvas.getContext('2d');
+      
+      // Set canvas size to match container
+      canvas.width = $('.architecture-container').width();
+      canvas.height = $('.architecture-container').height();
+      
+      // Clear canvas
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw connections between boxes
+      connectBoxes('express', 'mysql', context);
+      connectBoxes('express', 'passport', context);
+      connectBoxes('express', 'axios', context);
+      connectBoxes('express', 'lodash', context);
+      connectBoxes('express', 'bcryptjs', context);
+      connectBoxes('express', 'sanitize-html', context);
+      connectBoxes('express', 'multer', context);
+      connectBoxes('express', 'archiver', context);
+      connectBoxes('express', 'nodemailer', context);
+      connectBoxes('express', 'dotenv', context);
+      connectBoxes('express', 'node-cron', context);
+      connectBoxes('express', 'pdfkit', context);
+      connectBoxes('express', 'server', context);
+      connectBoxes('server', 'raspberry-pi', context);
+      connectBoxes('raspberry-pi', 'cloudflare', context);
+      connectBoxes('cloudflare', 'domain', context);
+    }
+
+    function connectBoxes(id1, id2, context) {
+      var box1 = $('#' + id1);
+      var box2 = $('#' + id2);
+
+      var containerWidth = $('.architecture-container').width();
+      var containerHeight = $('.architecture-container').height();
+
+      var x1 = parseFloat(box1.css('left')) / containerWidth * 100;
+      var y1 = parseFloat(box1.css('top')) / containerHeight * 100;
+      var x2 = parseFloat(box2.css('left')) / containerWidth * 100;
+      var y2 = parseFloat(box2.css('top')) / containerHeight * 100;
+
+      x1 += (box1.width() / 2) / containerWidth * 100;
+      y1 += (box1.height() / 2) / containerHeight * 100;
+      x2 += (box2.width() / 2) / containerWidth * 100;
+      y2 += (box2.height() / 2) / containerHeight * 100;
+
+      context.beginPath();
+      context.moveTo(x1 * context.canvas.width / 100, y1 * context.canvas.height / 100);
+      context.lineTo(x2 * context.canvas.width / 100, y2 * context.canvas.height / 100);
+      context.strokeStyle = '#000';
+      context.lineWidth = 2;
+      context.stroke();
+    }
+
+    // Initial draw
+    drawConnections();
+
+    // Redraw connections on window resize
+    $(window).resize(function() {
+      drawConnections();
+    });
+
+    // Update box positions to use percentages
+    $('.box').each(function() {
+      var $box = $(this);
+      var containerWidth = $('.architecture-container').width();
+      var containerHeight = $('.architecture-container').height();
+      
+      var leftPercent = (parseFloat($box.css('left')) / containerWidth * 100).toFixed(2) + '%';
+      var topPercent = (parseFloat($box.css('top')) / containerHeight * 100).toFixed(2) + '%';
+      
+      $box.css({
+        left: leftPercent,
+        top: topPercent
+      });
+    });
+  });
+</script>
+
+<%- include('./../partials/footer.ejs') %>
+

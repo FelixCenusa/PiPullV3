@@ -1,4 +1,3 @@
-
 const express = require("express");
 const session = require('express-session');
 const passport = require('passport');
@@ -10,6 +9,23 @@ const app = express();
 const indexRoutes = require("./routes/indexRoutes.js");
 const path = require('path');
 const port = 1337;
+
+// Require TimeToMove module
+const TimeToMove = require('./src/TimeToMove');
+
+// Record server start
+TimeToMove.recordServerStart();
+
+// Handle server stop to record server stoppedAt time
+process.on('SIGINT', async () => {
+    await TimeToMove.recordServerStop();
+    process.exit();
+});
+
+// Periodically update server last alive time
+setInterval(() => {
+    TimeToMove.updateServerLastAlive();
+}, 60000); // Update every 60 seconds
 
 // Set up session middleware
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

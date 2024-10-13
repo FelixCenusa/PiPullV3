@@ -2114,6 +2114,189 @@ async function getUserIDFromUsername(username) {
     }
 }
 
+// Function to record server start
+async function recordServerStart() {
+    const db = await mysql.createConnection(config);
+    try {
+        await db.beginTransaction();
+
+        // Close any previous open periods (if any)
+        const closePreviousSql = `
+            UPDATE systemUptimeDetails
+            SET serverStoppedAt = NOW(),
+                totalTimeInThisRow = TIMESTAMPDIFF(SECOND, serverStartedAt, NOW())
+            WHERE serverStoppedAt IS NULL
+        `;
+        await db.query(closePreviousSql);
+
+        // Insert new record
+        const sql = `
+            INSERT INTO systemUptimeDetails (serverStartedAt, serverLastAliveAt)
+            VALUES (NOW(), NOW())
+        `;
+        await db.query(sql);
+
+        await db.commit();
+    } catch (error) {
+        await db.rollback();
+        console.error('Error recording server start:', error);
+    } finally {
+        db.end();
+    }
+}
+
+// Function to record server stop
+async function recordServerStop() {
+    const db = await mysql.createConnection(config);
+    try {
+        await db.beginTransaction();
+        const sql = `UPDATE systemUptimeDetails
+                     SET serverStoppedAt = NOW(),
+                         totalTimeInThisRow = TIMESTAMPDIFF(SECOND, serverStartedAt, NOW())
+                     WHERE serverStoppedAt IS NULL
+                     ORDER BY id DESC
+                     LIMIT 1`;
+        await db.query(sql);
+        await db.commit();
+    } catch (error) {
+        await db.rollback();
+        console.error('Error recording server stop:', error);
+    } finally {
+        db.end();
+    }
+}
+
+// Function to update server last alive time
+async function updateServerLastAlive() {
+    const db = await mysql.createConnection(config);
+    try {
+        await db.beginTransaction();
+        const sql = `UPDATE systemUptimeDetails
+                     SET serverLastAliveAt = NOW()
+                     WHERE serverStoppedAt IS NULL
+                     ORDER BY id DESC
+                     LIMIT 1`;
+        await db.query(sql);
+        await db.commit();
+    } catch (error) {
+        await db.rollback();
+        console.error('Error updating server last alive time:', error);
+    } finally {
+        db.end();
+    }
+}
+
+// Function to get uptime statistics
+async function getUptimeStatistics() {
+    const db = await mysql.createConnection(config);
+    try {
+        // Get the earliest start time
+        const totalTimeSinceFirstStartResult = await db.query(`
+            SELECT MIN(serverStartedAt) AS firstStartTime FROM systemUptimeDetails
+        `);
+        const firstStartTime = totalTimeSinceFirstStartResult[0].firstStartTime;
+
+        if (!firstStartTime) {
+            // No uptime records
+            return {
+                totalUptime: 0,
+                totalTimeSinceFirstStart: 0,
+                uptimePercentage: 100,
+                lastDowntime: 0,
+                uptimeSinceLastDowntime: 0,
+                uptimeDowntimePeriods: []
+            };
+        }
+
+        // Total time since first start
+        const totalTimeSinceFirstStart = (new Date() - new Date(firstStartTime)) / 1000;
+
+        // Get all records ordered by serverStartedAt
+        const allRecords = await db.query(`
+            SELECT id, serverStartedAt, serverStoppedAt, totalTimeInThisRow
+            FROM systemUptimeDetails
+            ORDER BY serverStartedAt ASC
+        `);
+
+        let totalUptime = 0;
+        let uptimeDowntimePeriods = [];
+        let lastStopTime = null;
+
+        for (let i = 0; i < allRecords.length; i++) {
+            const record = allRecords[i];
+
+            // Downtime period between last stop and current start
+            if (lastStopTime && (new Date(record.serverStartedAt) > new Date(lastStopTime))) {
+                const downtimeStart = new Date(lastStopTime);
+                const downtimeEnd = new Date(record.serverStartedAt);
+                const downtimeDuration = (downtimeEnd - downtimeStart) / 1000;
+
+                uptimeDowntimePeriods.push({
+                    type: 'downtime',
+                    startTime: downtimeStart,
+                    endTime: downtimeEnd,
+                    duration: downtimeDuration
+                });
+            }
+
+            // Uptime period
+            const uptimeStart = new Date(record.serverStartedAt);
+            const uptimeEnd = record.serverStoppedAt ? new Date(record.serverStoppedAt) : new Date();
+            const uptimeDuration = (uptimeEnd - uptimeStart) / 1000;
+            totalUptime += uptimeDuration;
+
+            uptimeDowntimePeriods.push({
+                type: 'uptime',
+                startTime: uptimeStart,
+                endTime: uptimeEnd,
+                duration: uptimeDuration
+            });
+
+            lastStopTime = record.serverStoppedAt ? record.serverStoppedAt : null;
+        }
+
+        // Uptime percentage
+        const uptimePercentage = (totalUptime / totalTimeSinceFirstStart) * 100;
+
+        // Last downtime duration
+        let lastDowntime = 0;
+        for (let i = uptimeDowntimePeriods.length - 1; i >= 0; i--) {
+            if (uptimeDowntimePeriods[i].type === 'downtime') {
+                lastDowntime = uptimeDowntimePeriods[i].duration;
+                break;
+            }
+        }
+
+        // Uptime since last downtime
+        let uptimeSinceLastDowntime = 0;
+        for (let i = uptimeDowntimePeriods.length - 1; i >= 0; i--) {
+            if (uptimeDowntimePeriods[i].type === 'uptime') {
+                uptimeSinceLastDowntime += uptimeDowntimePeriods[i].duration;
+            } else {
+                break;
+            }
+        }
+
+        return {
+            totalUptime,
+            totalTimeSinceFirstStart,
+            uptimePercentage,
+            lastDowntime,
+            uptimeSinceLastDowntime,
+            uptimeDowntimePeriods
+        };
+    } catch (error) {
+        console.error('Error getting uptime statistics:', error);
+        return null;
+    } finally {
+        db.end();
+    }
+}
+
+
+
+
+
 
 module.exports = {
     createUser,
@@ -2179,6 +2362,10 @@ module.exports = {
     disableAccount,
     enableAccount,
     getUserIDFromUsername,
+    recordServerStart,
+    recordServerStop,
+    updateServerLastAlive,
+    getUptimeStatistics,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

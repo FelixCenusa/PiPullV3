@@ -33,6 +33,46 @@ async function isAdmin(req, res, next) {
     }
 }
 
+router.get('/statistics', async (req, res) => {
+    try {
+        // Fetch the leaderboard data and statistics from TimeToMove.js
+        const { leaderboard, totalFilesUploaded, totalMediaSize, totalUsers, totalLinesOfCode } = await TimeToMove.getLeaderboardStats();
+
+        // Record the page view
+        await TimeToMove.recordPageView(req, '/statistics');
+
+        // Retrieve the view counts
+        const viewCounts = await TimeToMove.getPageViewCounts('/statistics');
+
+        // Retrieve uptime statistics
+        const uptimeStats = await TimeToMove.getUptimeStatistics();
+
+        // Render the statistics page with the fetched stats
+        res.render('TimeToMove/statistics.ejs', {
+            session: req.session,
+            viewCounts,
+            uptimeStats,
+            leaderboard,
+            totalFilesUploaded,
+            totalMediaSize,
+            totalUsers,
+            totalLinesOfCode
+        });
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+        res.status(500).send('Error loading statistics.');
+    }
+});
+
+// make a route for architecture
+router.get('/architecture', async (req, res) => {
+    // Record the page view
+    await TimeToMove.recordPageView(req, '/architecture');
+    // Retrieve the view counts
+    const viewCounts = await TimeToMove.getPageViewCounts('/architecture');
+    // Render the page and pass the view counts
+    res.render('TimeToMove/architecture.ejs', { session: req.session, viewCounts });
+});
 
 // Admin route protected by isAdmin middleware
 router.get('/admin', isAdmin, async (req, res) => {
