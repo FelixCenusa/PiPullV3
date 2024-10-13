@@ -209,23 +209,38 @@
     </div>
 </div>
 
-<!-- Download Box Modal -->
-<div id="downloadBoxModal" class="modal" style="display: none;">
+<% } %>
+<!-- Print Box Modal -->
+<div id="printBoxModal" class="modal" style="display: none;">
     <div class="modal-content">
-        <span class="close" onclick="closeDownloadBoxModal()">&times;</span>
+        <span class="close" onclick="closePrintBoxModal()">&times;</span>
         <h2>Select Label Size</h2>
-        <form id="downloadForm">
+        <form id="printForm">
             <label for="labelSize">Choose Label Size:</label>
-            <select id="labelSize" name="labelSize">
+            <select id="labelSize" name="labelSize" onchange="toggleCustomSizeInputs(this.value)">
                 <option value="A4">A4</option>
                 <option value="Letter">Letter</option>
-                <!-- Add more sizes as needed -->
+                <option value="A3">A3</option>
+                <option value="A5">A5</option>
+                <option value="A6">A6</option>
+                <option value="A7">A7</option>
+                <option value="Legal">Legal</option>
+                <option value="Tabloid">Tabloid</option>
+                <option value="Custom">Custom</option>
             </select>
-            <button type="button" onclick="downloadBox()">Download</button>
+
+            <!-- Custom size inputs -->
+            <div id="customSizeInputs" style="display: none;">
+                <label for="customWidth">Width (px):</label>
+                <input type="number" id="customWidth" name="customWidth" min="1">
+                <label for="customHeight">Height (px):</label>
+                <input type="number" id="customHeight" name="customHeight" min="1">
+            </div>
+            <!-- Always show the "Print" button -->
+            <button type="button" onclick="printBox()">Print Custom</button>
         </form>
     </div>
 </div>
-<% } %>
 
 
 
@@ -279,7 +294,8 @@
                 <% } %>
                 
                 <!-- Always show the "Print" button -->
-                <button class="print-btn" onclick="event.stopPropagation(); openDownloadBoxModal(<%= box.BoxID %>)">Print</button>
+                <button class="print-btn" onclick="event.stopPropagation(); openPrintBoxModal('<%= box.BoxID %>')">Print Custom</button>
+                <button class="print-btn" onclick="event.stopPropagation(); printBoxSS('<%= box.BoxID %>')">Print Screenshot</button>
             </div>
 
             <!-- Box Description -->
@@ -385,27 +401,74 @@
 <%- include('./../partials/footer.ejs') %>
 
 <script>
-function openDownloadBoxModal(boxID) {
+function printBoxSS(boxID) {
+    console.log("Print button clicked for box:", boxID);  // Debugging line
+
+    const boxElement = document.getElementById(`box-${boxID}`);  // Use the correct box ID format
+    if (!boxElement) {
+        console.error("Box element not found.");  // Add error handling if the element is not found
+        return;
+    }
+
+    html2canvas(boxElement, { scale: 2 }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 190;  // Adjust image width to fit within the PDF
+        const pageHeight = pdf.internal.pageSize.height;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+
+        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        pdf.save(`Box-${boxID}.pdf`);
+    }).catch(function(error) {
+        console.error("Error capturing box with html2canvas:", error);
+    });
+}
+
+function openPrintBoxModal(boxID) {
     // Store the boxID in a data attribute for later use
-    document.getElementById('downloadBoxModal').dataset.boxId = boxID;
-    document.getElementById('downloadBoxModal').style.display = 'block';
+    console.log('Opening modal for Box ID:', boxID); // Debugging line
+    document.getElementById('printBoxModal').dataset.boxId = boxID;
+    document.getElementById('printBoxModal').style.display = 'block';
 }
 
-function closeDownloadBoxModal() {
-    document.getElementById('downloadBoxModal').style.display = 'none';
+function closePrintBoxModal() {
+    document.getElementById('printBoxModal').style.display = 'none';
 }
 
-async function downloadBox() {
-    const boxID = document.getElementById('downloadBoxModal').dataset.boxId;
+function toggleCustomSizeInputs(selectedValue) {
+    const customSizeInputs = document.getElementById('customSizeInputs');
+    if (selectedValue === 'Custom') {
+        customSizeInputs.style.display = 'block';
+    } else {
+        customSizeInputs.style.display = 'none';
+    }
+}
+
+async function printBox() {
+    const boxID = document.getElementById('printBoxModal').dataset.boxId;
     const labelSize = document.getElementById('labelSize').value;
+    let size;
+
+    if (labelSize === 'Custom') {
+        const customWidth = parseInt(document.getElementById('customWidth').value, 10);
+        const customHeight = parseInt(document.getElementById('customHeight').value, 10);
+        if (isNaN(customWidth) || isNaN(customHeight) || customWidth <= 0 || customHeight <= 0) {
+            alert('Please enter valid dimensions for custom size.');
+            return;
+        }
+        size = [customWidth, customHeight];
+    } else {
+        size = labelSize;
+    }
 
     try {
-        const response = await fetch('/generate-pdf', {
+        const username = "<%= user.Username %>";
+        const response = await fetch(`/${username}/${boxID}/generate-pdf`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ boxID, labelSize })
+            body: JSON.stringify({ size })
         });
 
         if (response.ok) {
@@ -417,7 +480,8 @@ async function downloadBox() {
             document.body.appendChild(a);
             a.click();
             a.remove();
-            closeDownloadBoxModal(); // Close the modal after download
+            window.URL.revokeObjectURL(url); // Clean up the URL object
+            closePrintBoxModal(); // Close the modal after download
         } else {
             alert('Failed to generate PDF');
         }
@@ -425,6 +489,7 @@ async function downloadBox() {
         console.error('Error downloading PDF:', error);
     }
 }
+
 
 
 

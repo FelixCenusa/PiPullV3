@@ -1112,6 +1112,78 @@ router.get('/:username/deleteProfilePic', async function (req, res) {
     }
 });
 
+
+router.post('/:username/:boxID/generate-pdf', async (req, res) => {
+    const { username, boxID } = req.params;
+    const { size } = req.body;
+
+    try {
+        // Get userID from username
+        const userID = await TimeToMove.getUserIDFromUsername(username);
+        // Fetch box details from the database
+        let box = await TimeToMove.getBoxByID(userID, boxID);
+        box = box[0];
+        if (!box) {
+            return res.status(404).send('Box not found');
+        }
+
+        // Determine the size for the PDF
+        const pdfSize = Array.isArray(size) ? size : size;
+
+        // Create a PDF document with the selected size
+        const doc = new PDFDocument({ size: pdfSize });
+
+        // Set the response headers to indicate a file download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=Box-${boxID}.pdf`);
+
+        // Pipe the PDF document to the response
+        doc.pipe(res);
+
+        // Get page dimensions
+        const { width, height } = doc.page;
+
+        // Draw a colorful rectangle that fills the entire page
+        doc.rect(0, 0, width, height).fill('#f0f8ff'); // Light blue background
+
+        // Calculate dynamic font sizes based on page size
+        const titleFontSize = Math.min(20, width / 20);
+        const textFontSize = Math.min(12, width / 30);
+
+        // Set text color and font
+        doc.fillColor('#000080') // Navy text color
+           .fontSize(titleFontSize)
+           .text(`Box Title: ${box.TitleChosen}`, 50, 50, { align: 'center', width: width - 100 });
+
+        doc.moveDown()
+           .fontSize(textFontSize)
+           .text(`Description: ${box.Description || 'No description available'}`, { align: 'center', width: width - 100 });
+
+        doc.text(`Public: ${box.IsPublic ? 'Yes' : 'No'}`, { align: 'center', width: width - 100 });
+        doc.text(`Number of Files: ${box.NumberOfFiles || 0}`, { align: 'center', width: width - 100 });
+        doc.moveDown();
+
+        // Generate QR Code
+        const qrCodeData = `https://yourwebsite.com/${username}/${boxID}`;
+        QRCode.toDataURL(qrCodeData, { errorCorrectionLevel: 'H' }, (err, url) => {
+            if (err) {
+                console.error('Error generating QR code:', err);
+            } else {
+                // Calculate QR code size and position
+                const qrImageSize = Math.min(100, width / 4);
+                const qrX = (width - qrImageSize) / 2;
+                const qrY = height - qrImageSize - 50; // 50px margin from bottom
+                doc.image(url, qrX, qrY, { fit: [qrImageSize, qrImageSize] });
+            }
+            doc.end();
+        });
+
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        res.status(500).send('Error generating PDF');
+    }
+});
+
 // Route to update box name, description, and public/private status
 router.post('/:username/:boxID/editBox', async (req, res) => {
     let { username, boxID } = req.params;

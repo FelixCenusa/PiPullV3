@@ -2101,6 +2101,20 @@ async function enableAccount(username) {
     }
 }
 
+// function to get userID from username
+async function getUserIDFromUsername(username) {
+    const db = await mysql.createConnection(config);
+    try {
+        const sql = `SELECT ID FROM Users WHERE Username = ?`;
+        const result = await db.query(sql, [username]);
+        return result[0].ID;
+    } catch (error) {
+        console.error('Error getting user ID from username:', error);
+        return null;
+    }
+}
+
+
 module.exports = {
     createUser,
     getAllUsers,
@@ -2164,6 +2178,7 @@ module.exports = {
     isUserDisabled,
     disableAccount,
     enableAccount,
+    getUserIDFromUsername,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

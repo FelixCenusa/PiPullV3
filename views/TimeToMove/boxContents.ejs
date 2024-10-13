@@ -16,7 +16,6 @@
 
     <!-- Display the 6-digit code button only if the user is the owner, the box is private, and the 6-digit code is not 0 -->
 <% if (session.user && session.user.username === user.Username) { %>
-    <h1>first worked</h1>
     <% if (!box[0].IsBoxPublic && box[0].DigitCodeIfPrivate !== 0) { %>
 
         <div class="code-reveal-container">
