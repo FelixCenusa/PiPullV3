@@ -12,6 +12,7 @@ Will fix automatically later, current automations are not working.
 //npm install passport passport-google-oauth20 dotenv
 //npm install axios
 //npm install node-cron
+npm install pdfkit
 
 
     MARIADB RUN:
@@ -22,11 +23,11 @@ Will fix automatically later, current automations are not working.
  // ALTER TABLE Users ADD GoogleID VARCHAR(255);
 //ALTER TABLE Users
 //ADD LastLoggedIn TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE Users
-ADD COLUMN isDisabled BOOLEAN DEFAULT FALSE;
+//ALTER TABLE Users
+//ADD COLUMN isDisabled BOOLEAN DEFAULT FALSE;
 
-ALTER TABLE BoxSharedWith
-ADD ActualBoxPath VARCHAR(255) DEFAULT NULL;
+//ALTER TABLE BoxSharedWith
+//ADD ActualBoxPath VARCHAR(255) DEFAULT NULL;
 
 
 

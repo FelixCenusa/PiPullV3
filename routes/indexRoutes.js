@@ -10,6 +10,7 @@ const sanitizeHtml = require('sanitize-html');
 const passport = require('passport');
 const crypto = require('crypto');
 const axios = require('axios');
+const PDFDocument = require('pdfkit');
 
 
 // Middleware to check if the user is an admin by querying the database
@@ -364,6 +365,7 @@ router.get("/create_user", async (req, res) => {
 
 router.post('/create_user', async (req, res) => {
     let { username, email, password, 'g-recaptcha-response': recaptchaResponse } = req.body;
+    console.log('recaptchaResponse:', recaptchaResponse);
 
     // Sanitize inputs to remove any potential HTML/JS
     username = sanitizeHtml(username);
@@ -371,18 +373,29 @@ router.post('/create_user', async (req, res) => {
     password = sanitizeHtml(password);
 
     // Verify reCAPTCHA
-    const secretKey = process.env.RECAPTCHA_SECRET_KEY; // Replace with your secret key from Google reCAPTCHA
-    const verificationURL = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${recaptchaResponse}`;
-    
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    const verificationURL = `https://www.google.com/recaptcha/api/siteverify`;
+
     try {
-        const captchaResponse = await axios.post(verificationURL);
-        const { success } = captchaResponse.data;
+        const params = new URLSearchParams();
+        params.append('secret', secretKey);
+        params.append('response', recaptchaResponse);
+        // Optionally, include the user's IP address
+        // params.append('remoteip', req.connection.remoteAddress);
+
+        const response = await axios.post(verificationURL, params);
+        console.log('Google reCAPTCHA response:', response.data);
+
+
+        const { success, 'error-codes': errorCodes } = response.data;
+
 
         if (!success) {
-            // If CAPTCHA verification fails, show an error message
+            console.error('reCAPTCHA verification failed:', errorCodes);
             return res.status(400).render('TimeToMove/register.ejs', {
                 errorMessage: 'Failed CAPTCHA verification. Please try again.',
                 session: req.session,
+                viewCounts: {},
                 data: {}
             });
         }
@@ -553,11 +566,34 @@ router.get('/login', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-    let { username, password } = req.body;
-    password = sanitizeHtml(password);
+    let { username, password, 'g-recaptcha-response': recaptchaResponse } = req.body;
+
+    // Sanitize inputs
     username = sanitizeHtml(username);
+    password = sanitizeHtml(password);
+
+    // Verify reCAPTCHA
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    const verificationURL = `https://www.google.com/recaptcha/api/siteverify`;
 
     try {
+        // Send POST request with form data
+        const params = new URLSearchParams();
+        params.append('secret', secretKey);
+        params.append('response', recaptchaResponse);
+        // Optionally, include the user's IP address
+        // params.append('remoteip', req.connection.remoteAddress);
+
+        const response = await axios.post(verificationURL, params);
+
+        const { success, 'error-codes': errorCodes } = response.data;
+
+        if (!success) {
+            console.error('reCAPTCHA verification failed:', errorCodes);
+            return res.render('TimeToMove/login.ejs', { errorMessage: 'Failed CAPTCHA verification. Please try again.', session: req.session });
+        }
+
+        // Proceed with login logic if reCAPTCHA is successful
         const result = await TimeToMove.loginUser(username, password);
 
         if (result.success) {
@@ -570,17 +606,17 @@ router.post('/login', async (req, res) => {
             // Update the LastLoggedIn timestamp
             await TimeToMove.updateLastLoggedIn(result.userId);
 
-
             // Redirect the user to their profile page (e.g., /username)
             return res.redirect(`/${result.username}`);
         } else {
-            return res.render('TimeToMove/login.ejs', { errorMessage: result.message,session: req.session });
+            return res.render('TimeToMove/login.ejs', { errorMessage: result.message, session: req.session });
         }
     } catch (error) {
         console.error('Error during login:', error);
-        res.status(500).send('Error during login.');
+        return res.status(500).send('Error during login.');
     }
 });
+
 
 
 // Display the forgot password form
@@ -900,6 +936,20 @@ router.post('/:username/:boxName/share', async (req, res) => {
 
         // Logic to share the box with the specified user and store the actual path
         await TimeToMove.shareBoxWithUser(box.BoxID, shareWith, actualShareCode, actualBoxPath);
+
+        // Generate a PDF with box details and send it to the user's browser for download
+        const doc = new PDFDocument();
+        res.setHeader('Content-disposition', `attachment; filename=Box-${box.BoxID}-Shared.pdf`);
+        res.setHeader('Content-type', 'application/pdf');
+        doc.pipe(res);
+
+        doc.fontSize(20).text(`Box Shared: ${box.TitleChosen}`, { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(12).text(`Shared by: ${username}`);
+        doc.text(`Shared with: ${shareWith}`);
+        doc.text(`Share Code: ${actualShareCode}`);
+        doc.text(`Box Path: ${actualBoxPath}`);
+        doc.end();
 
         // Show a popup that says "Box shared"
         return res.send(`<script>alert('Box shared with ${shareWith}'); window.location.href='/${username}';</script>`);

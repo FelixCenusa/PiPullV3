@@ -3,8 +3,8 @@ USE TimeToMove;
 -- Drop the tables in the correct order to respect foreign key constraints
 DROP TABLE IF EXISTS BoxMedia;
 DROP TABLE IF EXISTS Likes;
-DROP TABLE IF EXISTS Visited;
 DROP TABLE IF EXISTS BoxSharedWith;
+DROP TABLE IF EXISTS Visited;
 DROP TABLE IF EXISTS Boxes;
 DROP TABLE IF EXISTS Users;
 DROP TABLE IF EXISTS TempUsers;
@@ -65,7 +65,6 @@ CREATE TABLE BoxSharedWith (
     BoxID INT,
     SharedWithUserID INT,
     SharedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ActualBoxPath VARCHAR(255) DEFAULT NULL,
     FOREIGN KEY (BoxID) REFERENCES Boxes(BoxID) ON DELETE CASCADE,
     FOREIGN KEY (SharedWithUserID) REFERENCES Users(ID) ON DELETE CASCADE
 );
