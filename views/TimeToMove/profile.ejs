@@ -208,6 +208,23 @@
         <button type="button" class="btn-apply" onclick="applyLabelStyle()">Apply Label Style</button>
     </div>
 </div>
+
+<!-- Download Box Modal -->
+<div id="downloadBoxModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeDownloadBoxModal()">&times;</span>
+        <h2>Select Label Size</h2>
+        <form id="downloadForm">
+            <label for="labelSize">Choose Label Size:</label>
+            <select id="labelSize" name="labelSize">
+                <option value="A4">A4</option>
+                <option value="Letter">Letter</option>
+                <!-- Add more sizes as needed -->
+            </select>
+            <button type="button" onclick="downloadBox()">Download</button>
+        </form>
+    </div>
+</div>
 <% } %>
 
 
@@ -262,7 +279,7 @@
                 <% } %>
                 
                 <!-- Always show the "Print" button -->
-                <button class="print-btn" onclick="event.stopPropagation(); printBox(<%= box.BoxID %>)">Print</button>
+                <button class="print-btn" onclick="event.stopPropagation(); openDownloadBoxModal(<%= box.BoxID %>)">Print</button>
             </div>
 
             <!-- Box Description -->
@@ -368,6 +385,48 @@
 <%- include('./../partials/footer.ejs') %>
 
 <script>
+function openDownloadBoxModal(boxID) {
+    // Store the boxID in a data attribute for later use
+    document.getElementById('downloadBoxModal').dataset.boxId = boxID;
+    document.getElementById('downloadBoxModal').style.display = 'block';
+}
+
+function closeDownloadBoxModal() {
+    document.getElementById('downloadBoxModal').style.display = 'none';
+}
+
+async function downloadBox() {
+    const boxID = document.getElementById('downloadBoxModal').dataset.boxId;
+    const labelSize = document.getElementById('labelSize').value;
+
+    try {
+        const response = await fetch('/generate-pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ boxID, labelSize })
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Box-${boxID}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            closeDownloadBoxModal(); // Close the modal after download
+        } else {
+            alert('Failed to generate PDF');
+        }
+    } catch (error) {
+        console.error('Error downloading PDF:', error);
+    }
+}
+
+
 
 function filterBoxes(viewType) {
     const username = "<%= user.Username %>";
@@ -732,28 +791,6 @@ function applyLabelStyle() {
 
 // src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"
 // src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"
-function printBox(boxID) {
-    console.log("Print button clicked for box:", boxID);  // Debugging line
-
-    const boxElement = document.getElementById(`box-${boxID}`);  // Use the correct box ID format
-    if (!boxElement) {
-        console.error("Box element not found.");  // Add error handling if the element is not found
-        return;
-    }
-
-    html2canvas(boxElement, { scale: 2 }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 190;  // Adjust image width to fit within the PDF
-        const pageHeight = pdf.internal.pageSize.height;
-        const imgHeight = canvas.height * imgWidth / canvas.width;
-
-        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-        pdf.save(`Box-${boxID}.pdf`);
-    }).catch(function(error) {
-        console.error("Error capturing box with html2canvas:", error);
-    });
-}
 
 // JavaScript function to sort boxes
 function sortBoxes() {

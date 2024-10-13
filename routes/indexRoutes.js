@@ -937,20 +937,6 @@ router.post('/:username/:boxName/share', async (req, res) => {
         // Logic to share the box with the specified user and store the actual path
         await TimeToMove.shareBoxWithUser(box.BoxID, shareWith, actualShareCode, actualBoxPath);
 
-        // Generate a PDF with box details and send it to the user's browser for download
-        const doc = new PDFDocument();
-        res.setHeader('Content-disposition', `attachment; filename=Box-${box.BoxID}-Shared.pdf`);
-        res.setHeader('Content-type', 'application/pdf');
-        doc.pipe(res);
-
-        doc.fontSize(20).text(`Box Shared: ${box.TitleChosen}`, { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(12).text(`Shared by: ${username}`);
-        doc.text(`Shared with: ${shareWith}`);
-        doc.text(`Share Code: ${actualShareCode}`);
-        doc.text(`Box Path: ${actualBoxPath}`);
-        doc.end();
-
         // Show a popup that says "Box shared"
         return res.send(`<script>alert('Box shared with ${shareWith}'); window.location.href='/${username}';</script>`);
 
