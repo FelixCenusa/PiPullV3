@@ -5,7 +5,6 @@
 # /uploads/profiles/*
 # /uploads/labelStyles/*
 # !uploads/profiles/*.svg
-node_modules/
 uploads/
 /package.json
 /package-lock.json
