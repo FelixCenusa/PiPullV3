@@ -11,7 +11,7 @@ const passport = require('passport');
 const crypto = require('crypto');
 const axios = require('axios');
 const PDFDocument = require('pdfkit');
-
+const { marked } = require('marked');
 
 // Middleware to check if the user is an admin by querying the database
 async function isAdmin(req, res, next) {
@@ -32,6 +32,26 @@ async function isAdmin(req, res, next) {
         res.status(500).send('Error checking admin status');
     }
 }
+router.get('/readme', async (req, res) => {
+    const readmePath = path.join(__dirname, '..', 'readme.md');
+    // Record the page view
+    await TimeToMove.recordPageView(req, '/statistics');
+
+    // Retrieve the view counts
+    const viewCounts = await TimeToMove.getPageViewCounts('/statistics');
+    fs.readFile(readmePath, 'utf8', (err, data) => {
+        if (err) {
+            console.error('Error reading README.md:', err);
+            return res.status(500).send('Error reading README.md');
+        }
+
+        // Convert Markdown to HTML
+        const readmeHTML = marked(data);
+
+        // Render the EJS template with the HTML content
+        res.render('TimeToMove/readme.ejs', { readmeContent: readmeHTML, session: req.session, viewCounts });
+    });
+});
 
 router.get('/statistics', async (req, res) => {
     try {

@@ -1,0 +1,45 @@
+<%- include('./../partials/header.ejs') %>
+
+<div class="readme-container">
+    <h1>Project Documentation</h1>
+    <div class="markdown-content">
+        <%- readmeContent %>
+    </div>
+</div>
+
+<%- include('./../partials/footer.ejs') %>
+
+<style>
+    .readme-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .markdown-content {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+    }
+
+    .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+
+    .markdown-content p {
+        margin-bottom: 10px;
+    }
+
+    .markdown-content code {
+        background-color: #f4f4f4;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+
+    .markdown-content pre {
+        background-color: #f4f4f4;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+    }
+</style>

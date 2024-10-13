@@ -74,6 +74,43 @@
 - Implemented a Kanban board for task management and feature suggestions.
 - Added an architecture viewer for visualizing the project structure.
 
+### **Security:**
+
+#### **Input Validation & Sanitization:**
+
+- **Sanitizing User Inputs:** All user inputs are cleaned up by removing potentially harmful HTML or JavaScript, preventing Cross-Site Scripting (XSS) attacks.
+- **HTML Encoding:** User-generated content is encoded so that special characters cannot be interpreted as executable code.
+- **Regex Validation:** Regular expressions are used to ensure fields like usernames, emails, and passwords meet specific security standards, reducing the risk of invalid or malicious data being submitted.
+
+#### **Password Security:**
+
+- **Hashing and Salting:** Passwords are hashed and salted using bcrypt, ensuring they are never stored as plain text. This makes it difficult for attackers to retrieve passwords even if they gain access to the database.
+- **Password Strength Requirements:** Users must create strong passwords that include a mix of uppercase and lowercase letters, numbers, and special characters.
+
+#### **Session Security:**
+
+- **Secure Session Management:** User sessions are securely tied to each user, and session cookies are configured to prevent cross-site scripting attacks.
+- **Session Expiration:** Sessions automatically expire after a period of inactivity, preventing unauthorized access if a user forgets to log out.
+
+#### **IP-Based View Counting:**
+
+- **Hashed IP Addresses:** IP addresses are hashed before storage, maintaining user privacy while allowing the system to differentiate between unique and total page views.
+- **Unique View Counting:** By using hashed IPs, I can track unique visitors to provide accurate statistics without compromising user anonymity.
+- **Rate Limiting:** Will implement IP based rate limiting later, but for now captcha is very good at stopping bots.
+
+#### **File Upload Security:**
+
+- **File Size Limits:** Limits are placed on file sizes to prevent oversized uploads that could harm system performance or be used for denial-of-service attacks.
+- **File Path and Name Security:** Uploaded files are renamed and stored securely, with path and filename sanitization ensuring no malicious paths or characters compromise the system.
+- **MIME Type Checking:** File uploads are validated by checking MIME types to ensure that the content matches the declared file extension, protecting against malicious content disguised as safe file types.
+
+#### **SQL Injection Prevention:**
+
+- **Parameterized Queries:** All database queries use parameterized statements, preventing SQL injection attacks by ensuring user input is never directly inserted into SQL commands.
+
+#### **Ongoing Security Monitoring:**
+
+- I continuously monitor the platform for vulnerabilities and apply updates as necessary. If any security issue is noticed, I am quick to address it to keep the platform secure.
 ---
 
 ## **Self-Hosted Features**
@@ -168,4 +205,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ---
 
-<p align="center"> <img src="https://img.icons8.com/?size=512&id=55494&format=png" width="5%" alt="PIPULLV3-logo"> </p> 
+<p align="center"> <img src="https://img.icons8.com/?size=512&id=55494&format=png" width="5%" alt="PIPULLV3-logo"> </p> ```
