@@ -27,7 +27,6 @@ directories.forEach(dir => {
 });
 
 const indexRoutes = require("./routes/indexRoutes.js");
-const path = require('path');
 const port = 1337;
 
 // Require TimeToMove module
