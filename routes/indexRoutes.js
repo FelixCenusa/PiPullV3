@@ -1168,15 +1168,7 @@ async function renderProfilePage(req, res, viewType) {
         // Generate QR codes for public boxes and private boxes with a non-zero 6-digit code
         for (const box of filteredBoxes) {
             if (box.IsBoxPublic || (box.DigitCodeIfPrivate && box.DigitCodeIfPrivate !== '0')) {
-                let boxURL;
-                if (box.IsInsuranceLabel) {
-                    // For insurance labels, include the ItemList in the search query
-                    const ItemList = box.ItemList;
-                    const ItemListString = JSON.parse(ItemList).toString().replace(/[\[\]"]/g, '');
-                    boxURL = `${req.protocol}://${req.get('host')}/${username}?search=${ItemListString}`;
-                } else {
-                    boxURL = `${req.protocol}://${req.get('host')}/${username}/${box.TitleChosen}`;
-                }
+                const boxURL = `${req.protocol}://${req.get('host')}/${username}/${box.TitleChosen}`;
                 const qrCodeDataURL = await QRCode.toDataURL(boxURL, {
                     color: {
                         dark: '#000000',
@@ -1187,7 +1179,21 @@ async function renderProfilePage(req, res, viewType) {
             } else {
                 box.qrCodeDataURL = null;
             }
+            if (box.IsInsuranceLabel) {
+                // For insurance labels, include the ItemList in the search query
+                const ItemList = box.ItemList;
+                const ItemListString = JSON.parse(ItemList).toString().replace(/[\[\]"]/g, '');
+                boxURL = `${req.protocol}://${req.get('host')}/${username}?search=${ItemListString}`;
+                const qrCodeDataURL = await QRCode.toDataURL(boxURL, {
+                    color: {
+                        dark: '#000000',
+                        light: '#00000000'
+                    }
+                });
+                box.qrCodeDataURL = qrCodeDataURL;
+            }
         }
+
 
         const labelStylesDir = path.join(__dirname, '..', 'uploads', 'labelStyles');
         let labelStyles = [];
