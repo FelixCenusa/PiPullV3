@@ -7,3 +7,5 @@ Security:
     Dont send the userID or anything that can be used to identify the user.
     Dont trust anything that comes from the frontend.
     Validate user first, then trust them and send the least amount of data to the frontend.
+
+Will Let Node MODULES UPLOAD
