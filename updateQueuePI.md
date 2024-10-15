@@ -46,7 +46,7 @@ ALTER TABLE Boxes
 ADD COLUMN ItemList TEXT,
 ADD COLUMN ItemValues TEXT;
 
-
+     GITIGNORE UPLOADS SO NOT PUSHED SO UPDATE NEW FOLDERS MANUALLY: uploads/companyLogos
 
 
     .env update with actual variables.

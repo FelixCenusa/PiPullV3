@@ -829,6 +829,7 @@ router.post('/create_box', async (req, res) => {
             itemValues,
             withDigitCode
         } = req.body;
+        console.log("req.body in create_box", req.body);
         let userId = req.session.user.id;
 
         // Sanitize inputs
