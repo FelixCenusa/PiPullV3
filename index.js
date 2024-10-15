@@ -6,6 +6,26 @@ require('dotenv').config(); // To use environment variables
 require('./passportConfig');
 
 const app = express();
+
+const fs = require('fs');
+const path = require('path');
+
+// List of directories to create if they don't exist
+const directories = [
+    path.join(__dirname, 'uploads'),
+    path.join(__dirname, 'uploads', 'companyLogos'),
+    path.join(__dirname, 'uploads', 'labelStyles'),
+    path.join(__dirname, 'uploads', 'profiles')
+].filter(dir => !fs.existsSync(dir));
+
+// Function to create directories if they don't exist
+directories.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log(`Created directory: ${dir}`);
+    }
+});
+
 const indexRoutes = require("./routes/indexRoutes.js");
 const path = require('path');
 const port = 1337;

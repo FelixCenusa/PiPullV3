@@ -178,7 +178,7 @@ async function createUser(username, email, password) {
             'help', 'faq', 'privacy', 'cookie', 'security', 'dmca', 'copyright', 'legal', 'imprint', 
             'disclaimer', 'privacy-policy', 'terms-of-service', 'contact-us', 'help-support', 'faq-page', 
             'privacy-settings', 'cookie-settings', 'security-settings', 'dmca-notice', 'copyright-notice',
-             'legal-notice', 'imprint-notice', 'disclaimer-notice'
+             'legal-notice', 'imprint-notice', 'disclaimer-notice', 'companyLogos'
         ];
         if (restrictedUsernames.includes(username.toLowerCase())) {
             return { success: false, message: 'This username is not allowed.' };
@@ -1841,7 +1841,7 @@ async function updateUsername(userId, newUsername) {
             'help', 'faq', 'privacy', 'cookie', 'security', 'dmca', 'copyright', 'legal', 'imprint', 
             'disclaimer', 'privacy-policy', 'terms-of-service', 'contact-us', 'help-support', 'faq-page', 
             'privacy-settings', 'cookie-settings', 'security-settings', 'dmca-notice', 'copyright-notice',
-             'legal-notice', 'imprint-notice', 'disclaimer-notice'
+             'legal-notice', 'imprint-notice', 'disclaimer-notice', 'companyLogos'
         ];
         
         if (restrictedUsernames.includes(newUsername.toLowerCase())) {
