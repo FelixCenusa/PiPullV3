@@ -199,7 +199,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contact
 
-- **Email:** felixcenusa@example.com
+- **Email:** felixcenusa@gmail.com
 - **LinkedIn:** [Felix Cenusa](https://www.linkedin.com/in/felixcenusa)
 - **GitHub:** [FelixCenusa](https://github.com/FelixCenusa)
 
