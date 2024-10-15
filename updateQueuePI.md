@@ -36,6 +36,17 @@ npm install pdfkit
 //     totalTimeInThisRow INT DEFAULT NULL
 // );
 
+ALTER TABLE Boxes
+ADD NrOfFiles INT DEFAULT 0;
+ALTER TABLE Boxes
+ADD COLUMN IsInsuranceLabel BOOLEAN DEFAULT FALSE,
+ADD COLUMN Currency VARCHAR(10),
+ADD COLUMN CompanyLogoPath VARCHAR(255);
+ALTER TABLE Boxes
+ADD COLUMN ItemList TEXT,
+ADD COLUMN ItemValues TEXT;
+
+
 
 
     .env update with actual variables.

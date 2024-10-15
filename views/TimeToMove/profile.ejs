@@ -125,23 +125,61 @@
     <!-- Create Box Section -->
 <div class="create-box-card">
     <h2 class="create-box-title">Create a New Box</h2>
-    <form action="/create_box" method="POST" class="create-box-form">
+    <form action="/create_box" method="POST" class="create-box-form" enctype="multipart/form-data">
+        <!-- New field for IsInsuranceLabel -->
         <div class="form-group">
-            <label for="label">Box Title:</label>
-            <input type="text" id="label" name="label" class="form-control" placeholder="Enter box title" required oninput="replaceSpaces(this)">
+            <label for="isInsuranceLabel">Is this an Insurance Label?</label>
+            <input type="checkbox" id="isInsuranceLabel" name="isInsuranceLabel" value="true" onchange="toggleInsuranceFields()">
         </div>
-        <div class="form-group">
-            <label for="isPublic">Box Visibility:</label>
-            <select id="isPublic" name="isPublic" class="form-control">
-                <option value="true">Public</option>
-                <option value="false">Private</option>
-            </select>
+        <!-- Container for non-insurance fields -->
+        <div id="nonInsuranceFields">
+            <div class="form-group">
+                <label for="label">Box Title:</label>
+                <input type="text" id="label" name="label" class="form-control" placeholder="Enter box title" oninput="replaceSpaces(this)">
+            </div>
+            <div class="form-group">
+                <label for="isPublic">Box Visibility:</label>
+                <select id="isPublic" name="isPublic" class="form-control">
+                    <option value="true">Public</option>
+                    <option value="false">Private</option>
+                </select>
+            </div>
         </div>
+
+        <!-- Insurance-specific fields (initially hidden) -->
+        <div id="insuranceFields" style="display: none;">
+            <!-- New fields for item list and values -->
+            <div class="form-group">
+                <label for="itemList">Item List (Titles):</label>
+                <textarea id="itemList" name="itemList" class="form-control" placeholder="Enter items, one per line"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="itemValues">Item Values:</label>
+                <textarea id="itemValues" name="itemValues" class="form-control" placeholder="Enter values corresponding to each item, one per line"></textarea>
+            </div>
+            <!-- New field for Currency -->
+            <div class="form-group">
+                <label for="currency">Currency:</label>
+                <select id="currency" name="currency" class="form-control">
+                    <option value="SEK">SEK</option>
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                    <!-- Add more currencies as needed -->
+                </select>
+            </div>
+
+            <!-- New field for Company Logo Upload -->
+            <div class="form-group">
+                <label for="companyLogo">Upload Company Logo:</label>
+                <input type="file" id="companyLogo" name="companyLogo" accept="image/*" class="form-control">
+            </div>
+        </div>
+
         <input type="hidden" id="labelStyleUrl" name="labelStyleUrl">
         <input type="hidden" id="borderImageSlice" name="borderImageSlice">
         <input type="hidden" id="borderImageRepeat" name="borderImageRepeat">
         <button type="button" class="btn-add-label-style" onclick="openLabelStyleModal()">Add Label Style</button>
-        <button type="submit" class="btn-submit">Create Box</button>
+        <button type="submit" class="btn-submit" onclick="validateForm(event)">Create Box</button>
     </form>
 </div>
 </div>
@@ -210,7 +248,48 @@
 </div>
 
 <% } %>
-<!-- Print Box Modal -->
+
+
+
+
+
+
+<% if (session.user && session.user.username === user.Username) { %>
+    <div class="box-filter-container">
+        <div class="box-filter-buttons">
+            <button class="filter-btn" data-filter="own" onclick="filterBoxes('own')">Your Own Boxes</button>
+            <button class="filter-btn" data-filter="sharedWithYou" onclick="filterBoxes('sharedWithYou')">Boxes Shared With You</button>
+            <button class="filter-btn" data-filter="youShared" onclick="filterBoxes('youShared')">Boxes You've Shared</button>
+        </div>
+    </div>
+<% } %>
+<!-- Say "username"'s boxes -->
+<!-- <h2><%= user.Username %>'s Boxes</h2> -->
+<!-- Add a form for sorting the boxes with unique ID -->
+<form id="sortFormUnique" method="GET" action="/<%= user.Username %>" class="sort-form-unique">
+    <label for="sortOrderUnique">Sort by:</label>
+    <select id="sortOrderUnique" name="sortOrder" onchange="document.getElementById('sortFormUnique').submit();">
+        <option value="recent" <%= (sortOrder === 'recent' ? 'selected' : '') %>>Most Recent</option>
+        <option value="mostContent" <%= (sortOrder === 'mostContent' ? 'selected' : '') %>>Most Content</option>
+    </select>
+</form>
+
+<!-- Add a form for searching boxes -->
+<form id="searchForm" class="search-form" onsubmit="return redirectToSearch()">
+    <label for="searchQuery">Search:</label>
+    <input type="text" id="searchQuery" name="search" placeholder="Enter search term">
+    <button type="submit">Search</button>
+</form>
+
+
+
+
+
+<!-- Show boxes     -->
+<div class="box-container">
+    <% if (Array.isArray(boxes) && boxes.length > 0) { %>
+        <% boxes.forEach(function(box) { %>
+            <!-- Print Box Modal -->
 <div id="printBoxModal" class="modal" style="display: none;">
     <div class="modal-content">
         <span class="close" onclick="closePrintBoxModal()">&times;</span>
@@ -237,82 +316,97 @@
                 <input type="number" id="customHeight" name="customHeight" min="1">
             </div>
             <!-- Always show the "Print" button -->
-            <button type="button" onclick="printBox()">Print Custom</button>
+            <button type="button" onclick="<%= box.IsInsuranceLabel === 1 ? 'printBox' : 'printBox' %>('box-<%= box.BoxID %>')">Print Custom</button>
         </form>
     </div>
 </div>
-
-
-
-
-
-<% if (session.user && session.user.username === user.Username) { %>
-    <div class="box-filter-container">
-        <div class="box-filter-buttons">
-            <button class="filter-btn" data-filter="own" onclick="filterBoxes('own')">Your Own Boxes</button>
-            <button class="filter-btn" data-filter="sharedWithYou" onclick="filterBoxes('sharedWithYou')">Boxes Shared With You</button>
-            <button class="filter-btn" data-filter="youShared" onclick="filterBoxes('youShared')">Boxes You've Shared</button>
-        </div>
-    </div>
-<% } %>
-<!-- Say "username"'s boxes -->
-<!-- <h2><%= user.Username %>'s Boxes</h2> -->
-<!-- Add a form for sorting the boxes with unique ID -->
-<form id="sortFormUnique" method="GET" action="/<%= user.Username %>" class="sort-form-unique">
-    <label for="sortOrderUnique">Sort by:</label>
-    <select id="sortOrderUnique" name="sortOrder" onchange="document.getElementById('sortFormUnique').submit();">
-        <option value="recent" <%= (sortOrder === 'recent' ? 'selected' : '') %>>Most Recent</option>
-        <option value="mostContent" <%= (sortOrder === 'mostContent' ? 'selected' : '') %>>Most Content</option>
-    </select>
-</form>
-<div class="box-container">
-    <% if (Array.isArray(boxes) && boxes.length > 0) { %>
-        <% boxes.forEach(function(box) { %>
-            <div class="box-card" style="
-            <% if (box.LabelChosen) { %>
-            border: 10px solid transparent;
-            border-image-source: url('/uploads/labelStyles/<%= box.LabelChosen %>');
-            border-image-slice: <%= box.BorderImageSlice || 30 %>;
-            border-image-repeat: <%= box.BorderImageRepeat || 'repeat' %>;
-            <% } %>
-            " id="box-<%= box.BoxID %>" 
-            onclick="window.location.href='<%= box.ActualBoxPath ? box.ActualBoxPath : `/${user.Username}/${box.TitleChosen}` %>'">
-
-            <!-- Box Title Container -->
-            <div class="box-title-container">
-                <h3><%= box.TitleChosen %></h3>
-            </div>
-            
-            <div class="btn-container">
-                <!-- Only show "Edit", "Delete", and "Share" buttons if it's the user's own boxes -->
-                <% if (session.user && session.user.username === user.Username) { %>
-                    <% if (viewType === 'own' || viewType === 'youShared') { %>
-                        <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>', '<%= box.BoxDescription %>', <%= box.IsBoxPublic %>, '<%= box.DigitCodeIfPrivate %>')">Edit</button>
-                        <button class="delete-btn" onclick="event.stopPropagation(); openDeleteBoxModal(<%= box.BoxID %>, '<%= box.TitleChosen %>')">Delete</button>
-                        <button class="share-btn" style="background-color: purple;" onclick="event.stopPropagation(); openShareBoxModal('<%= user.Username %>', '<%= box.TitleChosen %>')">Share</button>
-                    <% } %>
+            <div class="box-card" id="box-<%= box.BoxID %>" 
+                <% if (box.IsInsuranceLabel !== 1) { %>
+                    onclick="window.location.href='<%= box.ActualBoxPath ? box.ActualBoxPath : `/${user.Username}/${box.TitleChosen}` %>'"
                 <% } %>
-                
-                <!-- Always show the "Print" button -->
-                <button class="print-btn" onclick="event.stopPropagation(); openPrintBoxModal('<%= box.BoxID %>')">Print Custom</button>
-                <button class="print-btn" onclick="event.stopPropagation(); printBoxSS('<%= box.BoxID %>')">Print Screenshot</button>
-            </div>
+                data-is-insurance-label="<%= box.IsInsuranceLabel %>"
+                data-item-list='<%= JSON.stringify(JSON.parse(box.ItemList || '[]')) %>'
+                style="
+                border: 10px solid transparent;
+                border-image-source: url('/uploads/labelStyles/<%= box.LabelChosen || "stopBreakingMycodeLol" %>');
+                border-image-slice: <%= box.BorderImageSlice || 30 %>;
+                border-image-repeat: <%= box.BorderImageRepeat || 'repeat' %>;">
 
-            <!-- Box Description -->
-            <p><strong>Description:</strong> <%= box.BoxDescription ? box.BoxDescription : 'No description provided.' %></p>
+            <% if (box.IsInsuranceLabel === 1) { %>
+                <!-- Display specific information for insurance labels -->
+                <% if (box.ItemList && box.ItemValues) { %>
+                    <% const item = JSON.parse(box.ItemList); %>
+                    <% const value = JSON.parse(box.ItemValues); %>
+                    <h3><%= item %></h3>
+                    <p><%= value %> <%= box.Currency %></p>
+                <% } %>
 
-            <!-- Box Visibility -->
-            <p><strong>Is Public:</strong> <%= box.IsBoxPublic ? 'Yes' : 'No' %></p>
+                <% if (box.CompanyLogoPath) { %>
+                    <img src="/uploads/companyLogos/<%= box.CompanyLogoPath %>" alt="Company Logo" class="company-logo">
+                <% } else { %>
+                    <svg width="100" height="100" viewBox="0 0 100 100" class="company-logo">
+                        <rect width="100" height="100" fill="#f0f0f0"/>
+                        <!-- Company building -->
+                        <rect x="30" y="30" width="40" height="60" fill="#808080"/>
+                        <rect x="40" y="40" width="10" height="10" fill="#ffffff"/>
+                        <rect x="55" y="40" width="10" height="10" fill="#ffffff"/>
+                        <rect x="40" y="55" width="10" height="10" fill="#ffffff"/>
+                        <rect x="55" y="55" width="10" height="10" fill="#ffffff"/>
+                        <!-- Money symbols -->
+                        <text x="15" y="25" font-family="Arial, sans-serif" font-size="20" fill="#008000">$</text>
+                        <text x="80" y="35" font-family="Arial, sans-serif" font-size="20" fill="#008000">$</text>
+                        <text x="10" y="80" font-family="Arial, sans-serif" font-size="20" fill="#008000">$</text>
+                        <text x="85" y="75" font-family="Arial, sans-serif" font-size="20" fill="#008000">$</text>
+                    </svg>
+                <% } %>
 
-            <!-- Number of Files -->
-            <p><strong>Number of Files:</strong> <%= box.NrOfFiles %></p>
-
-            <!-- Display QR code if the box is public -->
-            <% if (box.qrCodeDataURL) { %>
-                <div class="qr-code-container">
-                    <h4>Share this Box:</h4>
-                    <img src="<%= box.qrCodeDataURL %>" alt="QR Code for <%= box.TitleChosen %>">
+                <% if (box.qrCodeDataURL) { %>
+                    <div class="qr-code-container">
+                        <h4>Share this Insurance Label:</h4>
+                        <img src="<%= box.qrCodeDataURL %>" alt="QR Code for <%= box.TitleChosen %>">
+                    </div>
+                <% } %>
+                <div class="btn-container">
+                    <% if (session.user && session.user.username === user.Username) { %>
+                        <% if (viewType === 'own' || viewType === 'youShared') { %>
+                            <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModalInsurance('<%= box.BoxID %>', '<%= box.TitleChosen %>', '<%= JSON.stringify(box.ItemList) %>', '<%= JSON.stringify(box.ItemValues) %>', '<%= box.Currency || 'USD' %>')">Edit</button>
+                            <button class="delete-btn" onclick="event.stopPropagation(); openDeleteBoxModal('<%= box.BoxID %>', '<%= box.TitleChosen %>')">Delete</button>
+                            <button class="share-btn" style="background-color: purple;" onclick="event.stopPropagation(); <%= box.IsInsuranceLabel === 1 ? 'openShareBoxModal' : 'openShareBoxModal' %>('<%= user.Username %>', '<%= box.TitleChosen %>')">Share</button>
+                        <% } %>
+                    <% } %>
+                    
+                    <button class="print-btn" onclick="event.stopPropagation(); <%= box.IsInsuranceLabel === 1 ? 'openPrintBoxModal' : 'openPrintBoxModal' %>('<%= box.BoxID %>')">Print Custom</button>
+                    <button class="print-btn" onclick="event.stopPropagation(); <%= box.IsInsuranceLabel === 1 ? 'printBoxSSInsurance' : 'printBoxSS' %>('<%= box.BoxID %>')">Print Screenshot</button>
                 </div>
+            <% } else { %>
+                <!-- Display normal box card -->
+                <div class="box-title-container">
+                    <h3><%= box.TitleChosen %></h3>
+                </div>
+                
+                <div class="btn-container">
+                    <% if (session.user && session.user.username === user.Username) { %>
+                        <% if (viewType === 'own' || viewType === 'youShared') { %>
+                            <button class="edit-btn" onclick="event.stopPropagation(); openEditBoxModal('<%= box.BoxID %>', '<%= box.TitleChosen %>', '<%= box.BoxDescription %>', <%= box.IsBoxPublic %>, '<%= box.DigitCodeIfPrivate %>')">Edit</button>
+                            <button class="delete-btn" onclick="event.stopPropagation(); openDeleteBoxModal('<%= box.BoxID %>', '<%= box.TitleChosen %>')">Delete</button>
+                            <button class="share-btn" style="background-color: purple;" onclick="event.stopPropagation(); openShareBoxModal('<%= user.Username %>', '<%= box.TitleChosen %>')">Share</button>
+                        <% } %>
+                    <% } %>
+                    
+                    <button class="print-btn" onclick="event.stopPropagation(); openPrintBoxModal('<%= box.BoxID %>')">Print Custom</button>
+                    <button class="print-btn" onclick="event.stopPropagation(); printBoxSS('<%= box.BoxID %>')">Print Screenshot</button>
+                </div>
+
+                <p><strong>Description:</strong> <%= box.BoxDescription ? box.BoxDescription : 'No description provided.' %></p>
+                <p><strong>Is Public:</strong> <%= box.IsBoxPublic ? 'Yes' : 'No' %></p>
+                <p><strong>Number of Files:</strong> <%= box.NrOfFiles %></p>
+
+                <% if (box.qrCodeDataURL) { %>
+                    <div class="qr-code-container">
+                        <h4>Share this Box:</h4>
+                        <img src="<%= box.qrCodeDataURL %>" alt="QR Code for <%= box.TitleChosen %>">
+                    </div>
+                <% } %>
             <% } %>
             </div>
         <% }); %>
@@ -385,6 +479,33 @@
     </div>
 </div>
 
+<!-- Edit Insurance Label Modal -->
+<div id="editInsuranceLabelModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditInsuranceLabelModal()">&times;</span>
+        <h2>Edit Insurance Label</h2>
+        <form id="editInsuranceLabelForm" method="POST" action="">
+
+            <!-- Item List and Values -->
+            <label for="itemList">Item List (Titles):</label>
+            <input type="text" id="itemList" name="itemList" placeholder="Enter items, one per line" required oninput="sanitizeInput(this)" pattern="[a-zA-Z0-9 _.,!?()-]+" title="Only letters, numbers, spaces, and common punctuation are allowed.">
+            <br>
+            <label for="itemValues">Item Values:</label>
+            <input type="text" id="itemValues" name="itemValues" placeholder="Enter values corresponding to each item, one per line" oninput="sanitizeInput(this)" pattern="[0-9.]+( [a-zA-Z]+)?" title="Enter numeric values, optionally followed by a currency.">
+            <br>
+            <label for="currency">Currency:</label>
+            <select id="currency" name="currency">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="SEK">SEK</option>
+                <!-- Add more currencies as needed -->
+            </select>
+
+            <button type="submit">Update Insurance Label</button>
+        </form>
+    </div>
+</div>
+
 
 <!-- Delete Box Confirmation Modal -->
 <div id="deleteBoxModal" class="modal">
@@ -401,6 +522,98 @@
 <%- include('./../partials/footer.ejs') %>
 
 <script>
+    function redirectToSearch() {
+        const searchQuery = document.getElementById('searchQuery').value.trim();
+        if (searchQuery) {
+            const username = "<%= user.Username %>";
+            const url = `/${username}?search=${encodeURIComponent(searchQuery)}`;
+            window.location.href = url;
+        }
+        return false; // Prevent form submission
+    }
+
+    function filterBoxes(viewType) {
+        const username = "<%= user.Username %>";
+        const url = `/${username}/${viewType}`;
+        window.location.href = url;
+    }
+</script>
+<script>
+    // Function to open the edit modal for insurance labels
+    function openEditBoxModalInsurance(boxID, currentBoxName, itemList, itemValues, currency) {
+
+        // Set the item list and values
+        document.getElementById('itemList').value = itemList;
+        document.getElementById('itemValues').value = itemValues;
+
+        // Set the currency
+        document.getElementById('currency').value = currency;
+
+        // Set the form action URL
+        document.getElementById('editInsuranceLabelForm').action = '/' + '<%= user.Username %>' + '/' + boxID + '/editInsuranceLabel';
+
+        // Display the modal
+        document.getElementById('editInsuranceLabelModal').style.display = 'block';
+    }
+    function closeEditInsuranceLabelModal() {
+        document.getElementById('editInsuranceLabelModal').style.display = 'none'; // Corrected ID
+    }
+    // Function to print the insurance label box as a screenshot
+    function printBoxSSInsurance(boxID) {
+        console.log("Print button clicked for insurance label box:", boxID);
+
+        const boxElement = document.getElementById(`box-${boxID}`);
+        if (!boxElement) {
+            console.error("Insurance label box element not found.");
+            return;
+        }
+
+        html2canvas(boxElement, { scale: 2 }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgWidth = 190;
+            const pageHeight = pdf.internal.pageSize.height;
+            const imgHeight = canvas.height * imgWidth / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+            pdf.save(`InsuranceLabelBox-${boxID}.pdf`);
+        }).catch(function(error) {
+            console.error("Error capturing insurance label box with html2canvas:", error);
+        });
+    }
+</script>
+
+<script>
+function toggleInsuranceFields() {
+    const isInsuranceLabelChecked = document.getElementById('isInsuranceLabel').checked;
+    const nonInsuranceFields = document.getElementById('nonInsuranceFields');
+    const insuranceFields = document.getElementById('insuranceFields');
+
+    if (isInsuranceLabelChecked) {
+        nonInsuranceFields.style.display = 'none';
+        insuranceFields.style.display = 'block';
+    } else {
+        nonInsuranceFields.style.display = 'block';
+        insuranceFields.style.display = 'none';
+    }
+}
+
+function validateForm(event) {
+    const isInsuranceLabelChecked = document.getElementById('isInsuranceLabel').checked;
+    const labelInput = "InsuranceLabel";
+    
+
+    if (!isInsuranceLabelChecked && !labelInput.value.trim()) {
+        event.preventDefault(); // Prevent form submission
+        alert('Please enter a Box Title.');
+    }
+}
+
+
+
+// Initialize the form with the correct visibility state
+document.addEventListener('DOMContentLoaded', toggleInsuranceFields);
+
 function printBoxSS(boxID) {
     console.log("Print button clicked for box:", boxID);  // Debugging line
 
@@ -493,11 +706,7 @@ async function printBox() {
 
 
 
-function filterBoxes(viewType) {
-    const username = "<%= user.Username %>";
-    let url = `/${username}/${viewType}`;
-    window.location.href = url;
-}
+
 
 function openAccountManagementModal() {
         document.getElementById('accountManagementModal').style.display = 'block';
@@ -887,6 +1096,13 @@ function updateBoxCharCount() {
 </script>
 
 <style>
+.company-logo {
+    width: 228px;
+    height: 228px;
+    object-fit: cover; /* Ensures the image covers the area while maintaining aspect ratio */
+    border-radius: 8px; /* Optional: Add rounded corners */
+    border: 1px solid #ccc; /* Optional: Add a border for better visibility */
+}
 .print-btn {
         background-color: #28a745;
         color: white;
@@ -1724,6 +1940,28 @@ function updateBoxCharCount() {
 
 /* Label styling specific to this form */
 #sortFormUnique label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    margin-right: 10px;
+}
+
+/* Sort form container with unique ID - positioned above boxes */
+#searchForm {
+    display: block;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: 2px solid #ddd;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    width: 20%; /* Your desired width */
+    margin-left: 30px; /* Adds space between the form and the left wall */
+    text-align: center; /* Center align the form content */
+}
+
+/* Label styling specific to this form */
+#searchForm label {
     font-weight: bold;
     font-size: 14px;
     color: #333;

@@ -591,22 +591,34 @@ async function getUserBoxes(userId, sortQuery = 'ORDER BY BoxID DESC') {
 //     }
 // }
 
-// Function to create a new box (includes label style and border round)
-async function createBox(userId, isBoxPublic, label, labelStyleUrl, borderImageSlice, borderImageRepeat) {
+// Function to create a new box (includes label style, border round, insurance label, currency, company logo, item details, and digit code)
+async function createBox({ userId, isPublic, label, labelStyleUrl, borderImageSlice, borderImageRepeat, isInsuranceLabel, currency, companyLogoPath, itemsJson, valuesJson, titleChosen, withDigitCode }) {
     const db = await mysql.createConnection(config);
-    // console.log("userId", userId);
-    // console.log("isBoxPublic", isBoxPublic);
-    // console.log("label", label);
-    // console.log("labelStyleUrl", labelStyleUrl);
-    // console.log("borderImageSlice", borderImageSlice);
-    // console.log("borderImageRepeat", borderImageRepeat);
-    // console.log("Inside createBox function");
     try {
+        let digitCode = '0';
+        if (withDigitCode === 'true') {
+            // Generate a random 6-digit code
+            digitCode = Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        // Generate a default title if none is provided and it's an insurance label
+        if (isInsuranceLabel && !titleChosen) {
+            const rows = await db.query('SELECT COUNT(*) AS count FROM Boxes WHERE IsInsuranceLabel = TRUE');
+            if (!rows || rows.length === 0) {
+                titleChosen = "InsuranceLabelFIRST";
+            }
+            else{
+                const count = rows[0].count + 1;
+                titleChosen = `InsuranceLabel${count}`;
+            }
+        }
+
         const sql = `
-            INSERT INTO Boxes (UserID, IsBoxPublic, TitleChosen, NrOfFiles, LabelChosen, BorderImageSlice, BorderImageRepeat)
-            VALUES (?, ?, ?, 0, ?, ?, ?)
-        `;
-        await db.query(sql, [userId, isBoxPublic, label, labelStyleUrl, borderImageSlice, borderImageRepeat]);
+        INSERT INTO Boxes
+        (UserID, IsBoxPublic, LabelChosen, BorderImageSlice, BorderImageRepeat, IsInsuranceLabel, Currency, CompanyLogoPath, ItemList, ItemValues, TitleChosen, DigitCodeIfPrivate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+        await db.query(sql, [userId, isPublic, labelStyleUrl, borderImageSlice, borderImageRepeat, isInsuranceLabel, currency, companyLogoPath, itemsJson, valuesJson, titleChosen, digitCode]);
         console.log('New box created successfully.');
     } catch (error) {
         console.error('Error creating new box:', error);
@@ -644,8 +656,7 @@ async function getBoxByIDONLY(boxID) {
         console.log('Fetched box by IDNOTYERTTTT:');
         // Query to fetch the box information based on the provided boxID
         const [box] = await db.query('SELECT * FROM Boxes WHERE BoxID = ?', [boxID]);
-        console.log('Fetched box by IssssD:', box);
-        console.log('Fetched box by IssssD000:', box[0]);
+
 
         // If no box is found, return null
         if (!box) {
@@ -666,17 +677,17 @@ async function getBoxID(username, boxName){
     const userID = await getUserByUsername(username);
     const db = await mysql.createConnection(config);
     try {
-        console.log("GetBoxID username:", username);
+        //console.log("GetBoxID username:", username);
         const sql = `SELECT BoxID FROM Boxes WHERE UserID = ? AND TitleChosen = ?`;
-        console.log("GetBoxID username:", username);
-        console.log("boxName:", boxName);
-        console.log("UserID:", userID.ID);
-        console.log("LabelChiosen:", boxName);
+        //console.log("GetBoxID username:", username);
+        //console.log("boxName:", boxName);
+        //console.log("UserID:", userID);
+        //console.log("LabelChiosen:", boxName);
 
         
         const boxID = await db.query(sql, [userID.ID, boxName]);
-        console.log("BoxID:", boxID);
-        console.log("GetBoxID result:", boxID);
+        //console.log("BoxID:", boxID);
+        //console.log("GetBoxID result:", boxID);
         return boxID;
     } catch (error) {
         console.error('Error fetching box ID:', error);
@@ -712,6 +723,7 @@ async function getBoxMedia(boxID) {
 // Fetch user by username
 async function getUserByUsername(username) {
     const db = await mysql.createConnection(config);
+    //console.log("username in getUserByUsername:", username);
 
     try {
         // Normalize the username to avoid case or whitespace issues
@@ -750,7 +762,6 @@ async function getBoxByID(userID, BoxID) {
         const boxes = await db.query(sql, [userID, BoxID]);
         
         // Log the result of the query
-        console.log('Box query result:', boxes);
 
         return boxes
     } catch (error) {
@@ -1139,6 +1150,35 @@ async function updateBox(boxID, newBoxName, newBoxDescription, isBoxPublic, with
         console.log(`Box ${boxID} updated successfully.`);
     } catch (error) {
         console.error('Error updating box in database:', error);
+        throw error;
+    } finally {
+        await db.end();
+    }
+}
+
+// Function to update insurance label details
+async function updateInsuranceLabel(boxID, insuranceTitle, itemList, itemValues, currency) {
+    const db = await mysql.createConnection(config);
+
+    try {
+        // Convert itemList and itemValues to JSON strings
+        const itemListJSON = JSON.stringify(itemList);
+        const itemValuesJSON = JSON.stringify(itemValues);
+
+        const query = `
+            UPDATE Boxes
+            SET
+                TitleChosen = ?,
+                ItemList = ?,
+                ItemValues = ?,
+                Currency = ?
+            WHERE BoxID = ? AND IsInsuranceLabel = TRUE
+        `;
+        const values = [insuranceTitle, itemListJSON, itemValuesJSON, currency, boxID];
+        await db.query(query, values);
+        console.log(`Insurance label ${boxID} updated successfully.`);
+    } catch (error) {
+        console.error('Error updating insurance label in database:', error);
         throw error;
     } finally {
         await db.end();
@@ -1666,11 +1706,16 @@ async function findBoxByNameAndUsername(username, boxName) {
 async function shareBoxWithUser(boxID, shareWith, shareCode, actualBoxPath) {
     const db = await mysql.createConnection(config);
     console.log("Actual box path", actualBoxPath);
+    console.log("boxID in shareBoxWithUser", boxID);
+    console.log("shareWith in shareBoxWithUser", shareWith);
+    console.log("shareCode in shareBoxWithUser", shareCode);
+    console.log("actualBoxPath in shareBoxWithUser", actualBoxPath);
 
     try {
         // Find the user to share with
         const userSql = `SELECT ID, Email FROM Users WHERE Username = ?`;
         const userRows = await db.query(userSql, [shareWith]);
+        const username = shareWith;
         console.log(userRows);
         console.log("userRows in shareboxwithuser");
         if (userRows.length === 0) {
@@ -1687,12 +1732,14 @@ async function shareBoxWithUser(boxID, shareWith, shareCode, actualBoxPath) {
         await db.query(shareSql, [boxID, sharedWithUserID, actualBoxPath]);
 
         // Get boxName from boxID for logging purposes (no change here)
-        const boxNameSql = `SELECT TitleChosen FROM Boxes WHERE BoxID = ?`;
+        const boxNameSql = `SELECT TitleChosen, IsInsuranceLabel, ItemList FROM Boxes WHERE BoxID = ?`;
         const boxNameResult = await db.query(boxNameSql, [boxID]);
         const boxName = boxNameResult[0].TitleChosen;
         console.log("boxName in shareboxwithuser", boxName);
 
-        const username = shareWith;
+        const IsInsuranceLabel = boxNameResult[0].IsInsuranceLabel;
+        console.log("IsInsuranceLabel in shareboxwithuser", IsInsuranceLabel);
+
 
         // Prepare the email message, now using actualBoxPath for the URL
         // concatinate felixcenusa.com before the actualboxpath to the acualboxpath
@@ -1704,6 +1751,17 @@ async function shareBoxWithUser(boxID, shareWith, shareCode, actualBoxPath) {
                     <h2 style="color: #4CAF50;">A box named "<span style="color: #FF5722;">${boxName}</span>" has been shared with you by <span style="color: #2196F3;">${username}</span>.</h2>
                     <p>Login to see the box or use the <strong>Share code: <span style="color: #FF9800;">${shareCode}</span></strong> when opening the box from this link:</p>
                     <a href="${actualboxURL}" style="color: #4CAF50; font-size: 18px;">Open Box</a>
+                </div>`;
+        } else if (IsInsuranceLabel === 1) {
+            const ItemList = boxNameResult[0].ItemList;
+            // Parse the JSON string and remove brackets and quotes
+            const ItemListString = JSON.parse(ItemList).toString().replace(/[\[\]"]/g, '');
+            actualboxURL = `https://felixcenusa.com/${username}?search=${ItemListString}`;
+            emailMessage = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #4CAF50;">A box named "<span style="color: #FF5722;">${boxName}</span>" has been shared with you by <span style="color: #2196F3;">${username}</span>.</h2>
+                    <p>This is an insurance label. You can view the items sorted by value using this link:</p>
+                    <a href="${actualboxURL}" style="color: #4CAF50; font-size: 18px;">View Item and its Value</a>
                 </div>`;
         } else {
             emailMessage = `
@@ -1718,7 +1776,7 @@ async function shareBoxWithUser(boxID, shareWith, shareCode, actualBoxPath) {
         const mailOptions = {
             from: 'felixdevmailer@gmail.com',
             to: sharedWithUserEmail,
-            subject: 'A box has been shared with you!',
+            subject: IsInsuranceLabel === 1 ? 'An insurance label has been shared with you!' : 'A box has been shared with you!',
             html: emailMessage
         };
 
@@ -2366,6 +2424,7 @@ module.exports = {
     recordServerStop,
     updateServerLastAlive,
     getUptimeStatistics,
+    updateInsuranceLabel,
     "createBox": createBox,
     "addToBox": addToBox,
     "getBoxMedia": getBoxMedia,

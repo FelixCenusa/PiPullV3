@@ -775,39 +775,130 @@ router.get('/logout', (req, res) => {
 
 
 
+// Set up company logo storage engine
+const companyLogoStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/companyLogos'); // Ensure this directory exists
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname)); // Append timestamp to avoid name conflicts
+    }
+});
+
+// File filter to accept only images
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Only JPG, PNG, and GIF are allowed.'));
+    }
+};
+
+// Initialize upload middleware for company logos
+const uploadCompanyLogo = multer({
+    storage: companyLogoStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
+    fileFilter: fileFilter
+}).single('companyLogo');
+
+
+
 router.post('/create_box', async (req, res) => {
     // Check if the user is logged in
     if (!req.session.user) {
         return res.redirect('/login');
     }
-    console.log(req.body);
-    let { label, isPublic, labelStyleUrl, borderImageSlice, borderImageRepeat } = req.body;
-    let userId = req.session.user.id;  // Get the user ID from the session
-    // sanitize inputs
-    label = sanitizeHtml(label);
-    labelStyleUrl = sanitizeHtml(labelStyleUrl);
-    borderImageSlice = sanitizeHtml(borderImageSlice);
-    borderImageRepeat = sanitizeHtml(borderImageRepeat);
-    userId = sanitizeHtml(userId);
 
-    // console.log("req.body here");
-    // console.log("userId", userId);
-    // console.log("label", label);
-    // console.log("labelStyleUrl", labelStyleUrl);
-    // console.log("borderImageSlice", borderImageSlice);
-    // console.log("borderImageRepeat", borderImageRepeat);
-    // console.log("Inside create_box route");
-    // console.log("isPublic", isPublic);
+    // Handle file upload
+    uploadCompanyLogo(req, res, async function (err) {
+        if (err) {
+            console.error('Error uploading company logo:', err);
+            return res.status(400).send(err.message);
+        }
 
-    try {
-        // Call the function to create a new box
-        await TimeToMove.createBox(userId, isPublic === 'true', label, labelStyleUrl, borderImageSlice, borderImageRepeat);
-        // After creating the box, redirect back to the account page
-        res.redirect(`/${req.session.user.username}`);
-    } catch (error) {
-        console.error('Error creating box:', error);
-        res.status(500).send('Error creating box.');
-    }
+        let {
+            label,
+            isPublic,
+            labelStyleUrl,
+            borderImageSlice,
+            borderImageRepeat,
+            isInsuranceLabel,
+            currency,
+            itemList,
+            itemValues,
+            withDigitCode
+        } = req.body;
+        let userId = req.session.user.id;
+
+        // Sanitize inputs
+        label = sanitizeHtml(label);
+        labelStyleUrl = sanitizeHtml(labelStyleUrl);
+        borderImageSlice = sanitizeHtml(borderImageSlice);
+        borderImageRepeat = sanitizeHtml(borderImageRepeat);
+        userId = sanitizeHtml(userId);
+        isInsuranceLabel = isInsuranceLabel === 'true';
+        currency = sanitizeHtml(currency);
+        itemList = sanitizeHtml(itemList);
+        itemValues = sanitizeHtml(itemValues);
+        withDigitCode = sanitizeHtml(withDigitCode);
+
+        // Convert item values to numbers and validate
+        const items = itemList ? itemList.split('\n').map(item => item.trim()).filter(item => item) : [];
+        const values = itemValues ? itemValues.split('\n').map(value => parseFloat(value)).filter(value => !isNaN(value)) : [];
+
+        if (isInsuranceLabel && items.length !== values.length) {
+            return res.status(400).send('Number of items and values do not match.');
+        }
+
+        // Get the company logo filename if uploaded
+        let companyLogoPath = null;
+        if (req.file) {
+            companyLogoPath = req.file.filename;
+        }
+
+        try {
+            if (isInsuranceLabel) {
+                // Create a box for each item-value pair
+                for (let i = 0; i < items.length; i++) {
+                    await TimeToMove.createBox({
+                        userId,
+                        isPublic: isPublic === 'true',
+                        label: `${label} - ${items[i]}`,
+                        labelStyleUrl,
+                        borderImageSlice,
+                        borderImageRepeat,
+                        isInsuranceLabel,
+                        currency,
+                        companyLogoPath,
+                        itemsJson: JSON.stringify([items[i]]),
+                        valuesJson: JSON.stringify([values[i]]),
+                        titleChosen: null, // Pass null to trigger default title generation
+                        withDigitCode
+                    });
+                }
+            } else {
+                // Create a single box without insurance details
+                await TimeToMove.createBox({
+                    userId,
+                    isPublic: isPublic === 'true',
+                    label,
+                    labelStyleUrl,
+                    borderImageSlice,
+                    borderImageRepeat,
+                    isInsuranceLabel,
+                    titleChosen: label,
+                    withDigitCode
+                });
+            }
+
+            // Redirect back to the account page after creating the box(es)
+            res.redirect(`/${req.session.user.username}`);
+        } catch (error) {
+            console.error('Error creating box(es):', error);
+            res.status(500).send('Error creating box(es).');
+        }
+    });
 });
 
 // Route to handle label style upload
@@ -1020,10 +1111,10 @@ async function renderProfilePage(req, res, viewType) {
     const { username } = req.params;
     const session = req.session;
     const sortOrder = req.query.sortOrder || 'recent';
+    const searchQuery = req.query.search ? req.query.search.toLowerCase() : '';
 
     await TimeToMove.recordPageView(req, `${username}`);
     const viewCounts = await TimeToMove.getPageViewCounts(`${username}`);
-    // get isDisabled from the database
     const isDisabled = await TimeToMove.isUserDisabled(username);
     let sortQuery;
     if (sortOrder === 'mostContent') {
@@ -1060,15 +1151,23 @@ async function renderProfilePage(req, res, viewType) {
             boxes = [];
         }
 
-        // Generate QR codes for public boxes and private boxes with a non-zero 6-digit code
-        for (const box of boxes) {
-            console.log(`Processing box: ${box.TitleChosen}`);
-            console.log(`IsBoxPublic: ${box.IsBoxPublic}`);
-            console.log(`withDigitCode: ${box.withDigitCode}`);
+        // Filter boxes based on search query
+        const filteredBoxes = boxes.filter(box => {
+            const isInsuranceLabel = box.IsInsuranceLabel === 1;
+            const titleChosen = box.TitleChosen.toLowerCase();
+            const itemList = box.ItemList ? JSON.parse(box.ItemList) : [];
 
+            if (isInsuranceLabel) {
+                return itemList.some(item => item.toLowerCase().includes(searchQuery));
+            } else {
+                return titleChosen.includes(searchQuery);
+            }
+        });
+
+        // Generate QR codes for public boxes and private boxes with a non-zero 6-digit code
+        for (const box of filteredBoxes) {
             if (box.IsBoxPublic || (box.DigitCodeIfPrivate && box.DigitCodeIfPrivate !== '0')) {
                 const boxURL = `${req.protocol}://${req.get('host')}/${username}/${box.TitleChosen}`;
-                console.log(`Generating QR code for URL: ${boxURL}`);
                 const qrCodeDataURL = await QRCode.toDataURL(boxURL, {
                     color: {
                         dark: '#000000',
@@ -1076,10 +1175,8 @@ async function renderProfilePage(req, res, viewType) {
                     }
                 });
                 box.qrCodeDataURL = qrCodeDataURL;
-                console.log(`QR code generated for box: ${box.TitleChosen}`);
             } else {
                 box.qrCodeDataURL = null;
-                console.log(`No QR code generated for box: ${box.TitleChosen}`);
             }
         }
 
@@ -1095,7 +1192,7 @@ async function renderProfilePage(req, res, viewType) {
 
         res.render('TimeToMove/profile.ejs', {
             user,
-            boxes,
+            boxes: filteredBoxes,
             labelStyles,
             isOwner: session.user && session.user.username === user.Username,
             session,
@@ -1104,7 +1201,8 @@ async function renderProfilePage(req, res, viewType) {
             viewType,
             isAdmin,
             allUsernames,
-            isDisabled
+            isDisabled,
+            searchQuery
         });
     } catch (error) {
         console.error('Error loading user profile:', error);
@@ -1218,21 +1316,55 @@ router.post('/:username/:boxID/generate-pdf', async (req, res) => {
         const titleFontSize = Math.min(20, width / 20);
         const textFontSize = Math.min(12, width / 30);
 
-        // Set text color and font
-        doc.fillColor('#000080') // Navy text color
-           .fontSize(titleFontSize)
-           .text(`Box Title: ${box.TitleChosen}`, 50, 50, { align: 'center', width: width - 100 });
+        // Check if the box is an insurance label
+        if (box.IsInsuranceLabel === 1) {
+            // Set text color and font for insurance label
+            doc.fillColor('#000080') // Navy text color
+               .fontSize(titleFontSize)
+               .text(`Insurance Label: ${box.TitleChosen}`, 50, 50, { align: 'center', width: width - 100 });
 
-        doc.moveDown()
-           .fontSize(textFontSize)
-           .text(`Description: ${box.Description || 'No description available'}`, { align: 'center', width: width - 100 });
+            doc.moveDown();
 
-        doc.text(`Public: ${box.IsPublic ? 'Yes' : 'No'}`, { align: 'center', width: width - 100 });
-        doc.text(`Number of Files: ${box.NumberOfFiles || 0}`, { align: 'center', width: width - 100 });
+            // Add insurance-specific details
+            const itemList = JSON.parse(box.ItemList || '[]');
+            const itemValues = JSON.parse(box.ItemValues || '[]');
+            const currency = box.Currency || 'USD';
+
+            doc.fontSize(textFontSize)
+               .text(`Item and Value:`, { align: 'center', width: width - 100 });
+            itemList.forEach((item, index) => {
+                const value = itemValues[index] || 'N/A';
+                doc.text(`${item}: ${value} ${currency}`, { align: 'center', width: width - 100 });
+            });
+
+            // Add company logo
+            // CompanyLogoPath is just the filename, so we need to construct the full path
+            if (box.CompanyLogoPath) {
+                const logoPath = path.join(__dirname, '..', 'uploads', 'companyLogos', box.CompanyLogoPath);
+                const logoSize = Math.min(100, width / 4);
+                const logoX = (width - logoSize) / 2;
+                const logoY = doc.y + 20; // 20px margin from the last text
+                doc.image(logoPath, logoX, logoY, { fit: [logoSize, logoSize] });
+            }
+
+        } else {
+            // Set text color and font for regular box
+            doc.fillColor('#000080') // Navy text color
+               .fontSize(titleFontSize)
+               .text(`Box Title: ${box.TitleChosen}`, 50, 50, { align: 'center', width: width - 100 });
+
+            doc.moveDown()
+               .fontSize(textFontSize)
+               .text(`Description: ${box.Description || 'No description available'}`, { align: 'center', width: width - 100 });
+
+            doc.text(`Public: ${box.IsPublic ? 'Yes' : 'No'}`, { align: 'center', width: width - 100 });
+            doc.text(`Number of Files: ${box.NumberOfFiles || 0}`, { align: 'center', width: width - 100 });
+        }
+
         doc.moveDown();
 
         // Generate QR Code
-        const qrCodeData = `https://yourwebsite.com/${username}/${boxID}`;
+        const qrCodeData = `https://felixcenusa.com/${username}/${boxID}`;
         QRCode.toDataURL(qrCodeData, { errorCorrectionLevel: 'H' }, (err, url) => {
             if (err) {
                 console.error('Error generating QR code:', err);
@@ -1251,6 +1383,8 @@ router.post('/:username/:boxID/generate-pdf', async (req, res) => {
         res.status(500).send('Error generating PDF');
     }
 });
+
+
 
 // Route to update box name, description, and public/private status
 router.post('/:username/:boxID/editBox', async (req, res) => {
@@ -1284,6 +1418,39 @@ router.post('/:username/:boxID/editBox', async (req, res) => {
     }
 });
 
+// Route to update insurance label details
+router.post('/:username/:boxID/editInsuranceLabel', async (req, res) => {
+    let { username, boxID } = req.params;
+    let { insuranceTitle, itemList, itemValues, currency } = req.body;
+
+    // Sanitize inputs to remove any potential HTML/JS
+    username = sanitizeHtml(username);
+    boxID = sanitizeHtml(boxID);
+    insuranceTitle = sanitizeHtml(insuranceTitle);
+    itemList = sanitizeHtml(itemList);
+    itemValues = sanitizeHtml(itemValues);
+    currency = sanitizeHtml(currency);
+
+    try {
+        // Ensure the user is logged in and is the owner of the box
+        if (req.session.user && req.session.user.username === username) {
+            // Convert itemList and itemValues from strings to arrays
+            const itemListArray = itemList.split('\n').map(item => item.trim()).filter(item => item);
+            const itemValuesArray = itemValues.split('\n').map(value => value.trim()).filter(value => value);
+
+            // Call the function to update the insurance label with the new details
+            await TimeToMove.updateInsuranceLabel(boxID, insuranceTitle, itemListArray, itemValuesArray, currency);
+
+            // Redirect back to the profile page
+            res.redirect('/' + username);
+        } else {
+            res.status(403).send('Unauthorized to edit this insurance label.');
+        }
+    } catch (error) {
+        console.error('Error updating insurance label:', error);
+        res.status(500).send('Server error while updating insurance label.');
+    }
+});
 
 
 
@@ -1302,9 +1469,9 @@ function readFilePromise(filePath) {
 
 router.get('/:username/:boxName', async (req, res) => {
     const { username, boxName } = req.params;
-    console.log("username:", username);
-    console.log("boxName:", boxName);
-    console.log("Session user:", req.session.user);
+    //console.log("username:", username);
+    //console.log("boxName:", boxName);
+    //console.log("Session user:", req.session.user);
 
     await TimeToMove.recordPageView(req, `${username}${boxName}`);
     // Retrieve the view counts
@@ -1322,11 +1489,11 @@ if (!isNaN(boxName)) {
     boxID = boxName;
 } else {
     // boxName is a string, treat it as a boxName
-    console.log("boxName is a string (boxName)");
+    //console.log("boxName is a string (boxName)");
     boxID = await TimeToMove.getBoxID(username, boxName);  // Fetch the box by boxName
     boxID = boxID[0].BoxID;
 }
-    console.log('boxID in usrname "boxname" upload:', boxID);
+    //console.log('boxID in usrname "boxname" upload:', boxID);
     if (!boxID) {
         return res.render('TimeToMove/boxContents', {
             errorMessage: 'Box not found',
@@ -1336,21 +1503,21 @@ if (!isNaN(boxName)) {
             session: req.session
         });
     }
-    console.log("BOX ID HEREEEE", boxID);
+    //console.log("BOX ID HEREEEE", boxID);
 
     try {
-        console.log("Sanity check")
+        //console.log("Sanity check")
         const user = await TimeToMove.getUserByUsername(username);
-        console.log("Lets log if the session user is the owner of the box", req.params.username, " AGAIN ",user.Username);
-        console.log("STRAIGHT UPPP", user, " AGAIN ",username);
+        //console.log("Lets log if the session user is the owner of the box", req.params.username, " AGAIN ",user.Username);
+        //console.log("STRAIGHT UPPP", user, " AGAIN ",username);
 
         if (!user) {
             return res.status(404).send('User not found');
         }
-        console.log("boxID", boxID);
-        console.log("user.ID", user.ID);
+        //console.log("boxID", boxID);
+        //console.log("user.ID", user.ID);
         const box = await TimeToMove.getBoxByID(user.ID, boxID);
-        console.log("boxUSER BOX NAME", box);
+        //console.log("boxUSER BOX NAME", box);
         if (!box) {
             return res.status(404).send('Box not found');
         }
@@ -1417,11 +1584,11 @@ if (!isNaN(boxName)) {
 // Set up multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        console.log("req.params.boxID", req.params.boxID);
-        console.log("req.params.box", req.params.box);
-        console.log("req.params", req.params);
-        console.log("req.params.Username", req.params.username);
-        console.log("req.params.boxName", req.params.boxName);
+        //console.log("req.params.boxID", req.params.boxID);
+        //console.log("req.params.box", req.params.box);
+        //console.log("req.params", req.params);
+        //console.log("req.params.Username", req.params.username);
+        //console.log("req.params.boxName", req.params.boxName);
         //works
         console.log("This Shi fr works multer Disk storage");
 
@@ -1647,9 +1814,7 @@ router.post('/:username/:boxID/delete', async (req, res) => {
     try {
         // Fetch the user
         const user = await TimeToMove.getUserByUsername(username);
-        console.log('DELsssETE ROUTE User:', user);
-        console.log('DELEsssTE ROUTE boxID:', boxID);
-        console.log('DELEsssTE ROUTE username:', username);
+
         if (!user) {
             return res.status(404).send('User not found');
         }

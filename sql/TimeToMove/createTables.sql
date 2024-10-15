@@ -48,7 +48,7 @@ CREATE TABLE Users (
 
 CREATE TABLE Boxes (
     BoxID INT AUTO_INCREMENT PRIMARY KEY,
-    NrOfFiles INT,
+    NrOfFiles INT DEFAULT 0,
     UserID INT,  -- Reference to the Users table
     BoxDescription VARCHAR(4095),
     IsBoxPublic BOOLEAN DEFAULT FALSE,
@@ -65,6 +65,7 @@ CREATE TABLE BoxSharedWith (
     BoxID INT,
     SharedWithUserID INT,
     SharedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ActualBoxPath VARCHAR(255),
     FOREIGN KEY (BoxID) REFERENCES Boxes(BoxID) ON DELETE CASCADE,
     FOREIGN KEY (SharedWithUserID) REFERENCES Users(ID) ON DELETE CASCADE
 );
