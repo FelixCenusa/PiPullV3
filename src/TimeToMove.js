@@ -1,7 +1,7 @@
 "use strict";
 const mysql = require("promise-mysql");
 const axios = require('axios');
-const config = require("../config/db/TimeToMove.json");
+const config = require("../config/db/TimeToMove.js");
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const nodeMailer = require('nodemailer');
