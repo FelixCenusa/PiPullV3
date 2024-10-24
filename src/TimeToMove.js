@@ -1715,7 +1715,11 @@ async function shareBoxWithUser(boxID, shareWith, shareCode, actualBoxPath) {
         // Find the user to share with
         const userSql = `SELECT ID, Email FROM Users WHERE Username = ?`;
         const userRows = await db.query(userSql, [shareWith]);
-        const username = shareWith;
+        // lets define username and get it from who is sharing the box
+        const usernameSql = `SELECT Username FROM Users WHERE ID = (SELECT UserID FROM Boxes WHERE BoxID = ?)`;
+        const usernameRows = await db.query(usernameSql, [boxID]);
+        const username = usernameRows[0].Username;
+        console.log(username);
         console.log(userRows);
         console.log("userRows in shareboxwithuser");
         if (userRows.length === 0) {
