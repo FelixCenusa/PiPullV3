@@ -1,10 +1,11 @@
 <%- include('./../partials/header.ejs') %>
 
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
 <div class="content-container">
     <h1>Contact Us</h1>
     <p>If you have any questions or inquiries, feel free to reach out to us using the form below:</p>
     <p>ABSOLUTELY NO ADVERTISMENTS OR SOLICITATIONS ARE ALLOWEED!</p>
-
 
     <form id="contactForm" action="/submit_contact" method="POST">
         <div class="form-group">
@@ -22,14 +23,25 @@
             <textarea id="message" name="message" rows="5" required></textarea>
         </div>
 
+        <div class="g-recaptcha" data-sitekey="<%= process.env.RECAPTCHA_SITE_KEY %>"></div>
+
         <button type="submit" class="btn-submit">Send Message</button>
     </form>
 </div>
 
-<%- include('./../partials/footer.ejs') %>
-
 <script>
-    // JavaScript to handle the form submission via AJAX
+    document.getElementById('contactForm').addEventListener('submit', function (e) {
+        const recaptchaResponse = grecaptcha.getResponse();
+        if (recaptchaResponse.length === 0) {
+            e.preventDefault(); // Prevent form submission
+            alert('Please complete the reCAPTCHA.');
+        } else {
+            // Optionally, you can log the response for debugging
+            console.log('reCAPTCHA response:', recaptchaResponse);
+        }
+    });
+
+    // JavaScript to handle the form submission via AJAX and reCAPTCHA validation
     document.getElementById('contactForm').addEventListener('submit', async function (e) {
         e.preventDefault(); // Prevent the default form submission behavior
 
@@ -39,8 +51,15 @@
         const formData = {
             name: form.name.value,
             email: form.email.value,
-            message: form.message.value
+            message: form.message.value,
+            'g-recaptcha-response': grecaptcha.getResponse() // Include reCAPTCHA response
         };
+
+        // Validate reCAPTCHA
+        if (formData['g-recaptcha-response'].length === 0) {
+            alert('Please complete the reCAPTCHA.');
+            return; // Exit the function if reCAPTCHA is not completed
+        }
 
         try {
             // Send form data via fetch to the server
@@ -119,4 +138,3 @@
     background-color: #0056b3;
 }
     </style>
-    

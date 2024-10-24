@@ -12,10 +12,10 @@ sudo systemctl enable mariadb
 sudo mysql_secure_installation
 
 # Log into MariaDB as root
-sudo mysql -u root <<EOF
+sudo mysql -u root -p
 
 -- Create a new database
-CREATE DATABASE my_database;
+CREATE DATABASE TimeToMove;
 
 -- Create a new user and grant privileges
 CREATE USER '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${DB_PASSWORD}';

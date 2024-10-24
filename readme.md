@@ -149,7 +149,7 @@
     
 1. **Set Up Database**
     - Create a MySQL database.
-    - Run the provided SQL scripts to set up the necessary tables.
+    - Run the provided SQL scripts (setup.sql and createTables.sql) in the SQL folder to set up the necessary tables.
     
 1. **Configure Environment Variables**
     - Create a `.env` file.

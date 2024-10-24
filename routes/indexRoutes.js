@@ -402,11 +402,33 @@ router.get('/security', async(req, res) => {
 
 // Route to handle Contact form submission
 router.post('/submit_contact', async (req, res) => {
-    let { name, email, message } = req.body;
+    let { name, email, message, 'g-recaptcha-response': recaptchaResponse } = req.body;
+    console.log('reCAPTCHA response:', recaptchaResponse);
     // Sanitize inputs to remove any potential HTML/JS
     name = sanitizeHtml(name);
     email = sanitizeHtml(email);
     message = sanitizeHtml(message);
+
+    // Verify reCAPTCHA
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    const verificationURL = `https://www.google.com/recaptcha/api/siteverify`;
+
+    try {
+        const params = new URLSearchParams();
+        params.append('secret', secretKey);
+        params.append('response', recaptchaResponse);
+
+        const response = await axios.post(verificationURL, params);
+        const { success, 'error-codes': errorCodes } = response.data;
+
+        if (!success) {
+            console.error('reCAPTCHA verification failed:', errorCodes);
+            return res.status(400).json({ success: false, message: 'Failed CAPTCHA verification. Please try again.' });
+        }
+    } catch (error) {
+        console.error('Error verifying reCAPTCHA:', error);
+        return res.status(500).json({ success: false, message: 'Error verifying reCAPTCHA.' });
+    }
 
     // Send email using the email service
     const emailSent = await TimeToMove.sendEmailContact(name, email, message);

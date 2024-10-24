@@ -54,3 +54,9 @@ ADD COLUMN ItemValues TEXT;
     nano .env
     paste code from windows
     ctrl+x , y , enter
+
+
+
+
+// to check logs and if WP bots still trying to access my web page:
+pm2 logs --lines 1000
