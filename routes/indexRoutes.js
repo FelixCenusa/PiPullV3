@@ -1716,10 +1716,10 @@ const upload = multer({
 //     }
 // });
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 100 * 1024 * 1024 } // Optional: Limit file size to 10MB
-});
+// const upload = multer({
+//     storage: storage,
+//     limits: { fileSize: 100 * 1024 * 1024 } // Optional: Limit file size to 10MB
+// });
 
 // POST route for handling file uploads
 router.post('/:username/:boxName/upload', upload.fields([
