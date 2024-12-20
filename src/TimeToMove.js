@@ -2365,7 +2365,7 @@ async function createOrGetBox(boxName) {
         // Check if the box already exists
         const [rows] = await db.query(`SELECT * FROM Boxes WHERE BoxDescription = ?`, [boxName]);
         if (rows.length > 0) {
-            return rows[0];
+            return rows;
         }
 
         // Create the box
