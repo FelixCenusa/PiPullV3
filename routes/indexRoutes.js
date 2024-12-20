@@ -1693,28 +1693,28 @@ const upload = multer({
 
 
 
-// Set up multer for file uploads
-// Set up multer for file uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        //console.log("req.params.boxID", req.params.boxID);
-        //console.log("req.params.box", req.params.box);
-        //console.log("req.params", req.params);
-        //console.log("req.params.Username", req.params.username);
-        //console.log("req.params.boxName", req.params.boxName);
-        //works
-        console.log("This Shi fr works multer Disk storage");
+// // Set up multer for file uploads
+// // Set up multer for file uploads
+// const storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         //console.log("req.params.boxID", req.params.boxID);
+//         //console.log("req.params.box", req.params.box);
+//         //console.log("req.params", req.params);
+//         //console.log("req.params.Username", req.params.username);
+//         //console.log("req.params.boxName", req.params.boxName);
+//         //works
+//         console.log("This Shi fr works multer Disk storage");
 
-        const uploadPath = path.join(__dirname, '..', 'uploads', req.params.username, req.params.boxName);
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-        }
-        cb(null, uploadPath);
-},
-    filename: function (req, file, cb) {
-        cb(null, file.originalname); // Save with original filename
-    }
-});
+//         const uploadPath = path.join(__dirname, '..', 'uploads', req.params.username, req.params.boxName);
+//         if (!fs.existsSync(uploadPath)) {
+//             fs.mkdirSync(uploadPath, { recursive: true });
+//         }
+//         cb(null, uploadPath);
+// },
+//     filename: function (req, file, cb) {
+//         cb(null, file.originalname); // Save with original filename
+//     }
+// });
 
 const upload = multer({
     storage: storage,
