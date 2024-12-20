@@ -92,8 +92,6 @@ router.get('/statistics', async (req, res) => {
     }
 });
 
-
-
 // make a route for architecture
 router.get('/architecture', async (req, res) => {
     // Record the page view
@@ -1081,44 +1079,48 @@ router.get('/photography', async (req, res) => {
     // Record the page view
     await TimeToMove.recordPageView(req, '/photography');
 
-    // Check admin status
+    // Retrieve the view counts
+    const viewCounts = await TimeToMove.getPageViewCounts('/photography');
+
+    // Check if the user is an admin
     let isAdmin = false;
     if (req.session.user) {
         isAdmin = await TimeToMove.isUserAdmin(req.session.user.username);
     }
 
-    // Fetch photography box
-    const photographyBox = await TimeToMove.createOrGetBox('photography');
-
-    // Get images from the photography box
-    const photos = await TimeToMove.getBoxMedia(photographyBox.BoxID, 'image');
+    // Fetch all photos from the photography box
+    const photos = await TimeToMove.getBoxMedia('photography');
 
     res.render('TimeToMove/PhotographyTemp', {
         session: req.session,
+        viewCounts,
         isAdmin,
         photos
     });
 });
 
-// Upload photos for photography
-router.post('/photography/upload', upload.array('photos', 10), async (req, res) => {
+
+// Upload photo for photography (single image upload)
+router.post('/photography/upload', upload.single('photo'), async (req, res) => {
     try {
         if (!req.session.user || !(await TimeToMove.isUserAdmin(req.session.user.username))) {
-            return res.status(403).send('Access denied');
+            return res.status(403).send('Access denied. Only admins can upload photos.');
         }
 
         const photographyBox = await TimeToMove.createOrGetBox('photography');
         const boxID = photographyBox.BoxID;
 
-        // Insert each uploaded file into the BoxMedia table
-        for (const file of req.files) {
-            await TimeToMove.insertMediaIntoBox(boxID, path.join('photography', file.filename), 'image');
+        if (!req.file) {
+            return res.status(400).send('No file uploaded.');
         }
+
+        // Insert the uploaded file into the BoxMedia table
+        await TimeToMove.insertMediaIntoBox(boxID, path.join('photography', req.file.filename), 'image');
 
         res.redirect('/photography');
     } catch (err) {
-        console.error('Error uploading photos:', err);
-        res.status(500).send('Error uploading photos');
+        console.error('Error uploading photo:', err);
+        res.status(500).send('An error occurred while uploading the photo.');
     }
 });
 
@@ -1663,64 +1665,36 @@ if (!isNaN(boxName)) {
 
 
 
+
+
+
+// Set up multer for file uploads
+// Set up multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadPath = path.join(__dirname, '..', 'uploads', 'photography');
+        //console.log("req.params.boxID", req.params.boxID);
+        //console.log("req.params.box", req.params.box);
+        //console.log("req.params", req.params);
+        //console.log("req.params.Username", req.params.username);
+        //console.log("req.params.boxName", req.params.boxName);
+        //works
+        console.log("This Shi fr works multer Disk storage");
+
+        const uploadPath = path.join(__dirname, '..', 'uploads', req.params.username, req.params.boxName);
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }
         cb(null, uploadPath);
-    },
+},
     filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname); // Add a timestamp to avoid overwrites
+        cb(null, file.originalname); // Save with original filename
     }
 });
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    fileFilter: function (req, file, cb) {
-        const allowedTypes = /jpeg|jpg|png|gif/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error('Invalid file type. Only JPG, PNG, and GIF are allowed.'));
-    }
+    limits: { fileSize: 100 * 1024 * 1024 } // Optional: Limit file size to 10MB
 });
-
-
-
-// // Set up multer for file uploads
-// // Set up multer for file uploads
-// const storage = multer.diskStorage({
-//     destination: function (req, file, cb) {
-//         //console.log("req.params.boxID", req.params.boxID);
-//         //console.log("req.params.box", req.params.box);
-//         //console.log("req.params", req.params);
-//         //console.log("req.params.Username", req.params.username);
-//         //console.log("req.params.boxName", req.params.boxName);
-//         //works
-//         console.log("This Shi fr works multer Disk storage");
-
-//         const uploadPath = path.join(__dirname, '..', 'uploads', req.params.username, req.params.boxName);
-//         if (!fs.existsSync(uploadPath)) {
-//             fs.mkdirSync(uploadPath, { recursive: true });
-//         }
-//         cb(null, uploadPath);
-// },
-//     filename: function (req, file, cb) {
-//         cb(null, file.originalname); // Save with original filename
-//     }
-// });
-
-
-// const upload = multer({
-//     storage: storage,
-//     limits: { fileSize: 100 * 1024 * 1024 } // Optional: Limit file size to 10MB
-// });
 
 // POST route for handling file uploads
 router.post('/:username/:boxName/upload', upload.fields([

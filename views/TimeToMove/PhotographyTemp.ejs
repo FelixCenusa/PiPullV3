@@ -2,10 +2,10 @@
 <main class="photography-container">
     <% if (isAdmin) { %>
         <section class="admin-upload">
-            <h2>Upload New Photos</h2>
+            <h2>Upload a New Photo</h2>
             <form action="/photography/upload" method="POST" enctype="multipart/form-data">
-                <input type="file" name="photos" multiple accept="image/jpeg, image/png, image/gif" required>
-                <button type="submit" class="upload-btn">Upload Photos</button>
+                <input type="file" name="photo" accept="image/jpeg, image/png, image/gif" required>
+                <button type="submit" class="upload-btn">Upload Photo</button>
             </form>
         </section>
     <% } %>
@@ -15,7 +15,7 @@
         <div class="gallery-grid">
             <% photos.forEach(photo => { %>
                 <div class="photo-card">
-                    <img src="/uploads/<%= photo.MediaPath %>" alt="Uploaded photo" class="gallery-photo" onclick="toggleFullscreen(this)">
+                    <img src="/uploads/<%= photo %>" alt="Uploaded photo" class="gallery-photo" onclick="toggleFullscreen(this)">
                 </div>
             <% }) %>
         </div>
