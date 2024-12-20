@@ -5,23 +5,27 @@
             <h2>Upload a New Photo</h2>
             <form action="/photography/upload" method="POST" enctype="multipart/form-data">
                 <input type="file" name="photo" accept="image/jpeg, image/png, image/gif" required>
-                <button type="submit">Upload Photo</button>
+                <button type="submit" class="upload-btn">Upload Photo</button>
             </form>
-            
         </section>
     <% } %>
 
     <section class="photo-gallery">
         <h2>Photo Gallery</h2>
         <div class="gallery-grid">
-            <% photos.forEach(photo => { %>
-                <div class="photo-card">
-                    <img src="/uploads/<%= photo %>" alt="Uploaded photo" class="gallery-photo" onclick="toggleFullscreen(this)">
-                </div>
-            <% }) %>
+            <% if (photos && photos.length > 0) { %>
+                <% photos.forEach(photo => { %>
+                    <div class="photo-card">
+                        <img src="/uploads/<%= photo %>" alt="Uploaded photo" class="gallery-photo" onclick="toggleFullscreen(this)">
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p>No photos available yet. Please check back later.</p>
+            <% } %>
         </div>
     </section>
 </main>
+
 
 <script>
     function toggleFullscreen(image) {

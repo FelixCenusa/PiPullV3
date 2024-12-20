@@ -1079,25 +1079,34 @@ router.get('/photography', async (req, res) => {
     // Record the page view
     await TimeToMove.recordPageView(req, '/photography');
 
-    // Retrieve the view counts
-    const viewCounts = await TimeToMove.getPageViewCounts('/photography');
-
-    // Check if the user is an admin
     let isAdmin = false;
     if (req.session.user) {
         isAdmin = await TimeToMove.isUserAdmin(req.session.user.username);
     }
 
-    // Fetch all photos from the photography box
-    const photos = await TimeToMove.getBoxMedia('photography');
+    // Fetch photography box
+    try {
+        const photographyBox = await TimeToMove.createOrGetBox('photography');
+        console.log('Photography Box:', photographyBox);
 
-    res.render('TimeToMove/PhotographyTemp', {
-        session: req.session,
-        viewCounts,
-        isAdmin,
-        photos
-    });
+        // Get images from the photography box
+        const media = await TimeToMove.getBoxMedia(photographyBox.BoxID);
+        console.log('Box Media:', media);
+
+        const photos = media.images || []; // Fallback to an empty array if undefined
+        console.log('Photos:', photos);
+
+        res.render('TimeToMove/PhotographyTemp', {
+            session: req.session,
+            isAdmin,
+            photos
+        });
+    } catch (err) {
+        console.error('Error fetching photography box or media:', err);
+        res.status(500).send('Error loading the photography page.');
+    }
 });
+
 
 
 
