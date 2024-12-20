@@ -2357,24 +2357,37 @@ async function getUptimeStatistics() {
 
 
 
-// Create or get the photography box
 async function createOrGetBox(boxName) {
     const db = await mysql.createConnection(config);
 
     try {
-        // Check if the box already exists
+        // Query to check if the box already exists
         const rows = await db.query(`SELECT * FROM Boxes WHERE BoxDescription = ?`, [boxName]);
+        console.log('Query Result:', rows); // Debugging output
+
+        // Return the existing box if it exists
         if (rows.length > 0) {
-            return rows;
+            console.log('Box exists:', rows[0]);
+            return rows[0];
         }
 
-        // Create the box
-        const [result] = await db.query(`INSERT INTO Boxes (BoxDescription, IsBoxPublic) VALUES (?, ?)`, [boxName, true]);
+        // Create a new box if it doesn't exist
+        const result = await db.query(
+            `INSERT INTO Boxes (BoxDescription, IsBoxPublic) VALUES (?, ?)`,
+            [boxName, true] // Default: public box
+        );
+        console.log('Created New Box with ID:', result.insertId);
         return { BoxID: result.insertId, BoxDescription: boxName };
+
+    } catch (err) {
+        console.error('Error in createOrGetBox:', err);
+        throw err;
+
     } finally {
-        await db.end();
+        db.end(); // Properly close the database connection
     }
 }
+
 
 
 module.exports = {
