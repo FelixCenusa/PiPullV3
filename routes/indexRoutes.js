@@ -1100,57 +1100,7 @@ router.get('/photography', async (req, res) => {
 });
 
 
-router.post('/photography/upload', upload.fields([
-    { name: 'photo', maxCount: 1 } // Only allow one photo at a time
-]), async (req, res) => {
-    let gotThisFar = 0;
-    console.log("gotThisFar", gotThisFar++);
-    try {
-        // Check if the user is an admin
-        if (!req.session.user || !(await TimeToMove.isUserAdmin(req.session.user.username))) {
-            return res.status(403).send('Access denied. Only admins can upload photos.');
-        }
 
-        console.log("gotThisFar", gotThisFar++);
-        // Fetch or create the photography box
-        const photographyBox = await TimeToMove.createOrGetBox('photography');
-        const boxID = photographyBox.BoxID;
-        console.log('Photography Box ID:', boxID);
-
-        console.log("gotThisFar", gotThisFar++);
-        // Handle the uploaded photo
-        const file = req.files.photo ? req.files.photo[0] : null;
-        if (!file) {
-            return res.status(400).send('No file uploaded.');
-        }
-        console.log("Uploaded File:", file);
-
-        console.log("gotThisFar", gotThisFar++);
-        // Construct the media path
-        const mediaPath = path.join('photography', file.originalname);
-
-        // Ensure the upload directory exists
-        const uploadDir = path.join(__dirname, '..', 'uploads', 'photography');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        // Move the file to the correct directory
-        const filePath = path.join(uploadDir, file.originalname);
-        fs.renameSync(file.path, filePath);
-        console.log("File saved at:", filePath);
-
-        // Insert the media into the database
-        await TimeToMove.insertMediaIntoBox(boxID, mediaPath, 'image');
-        console.log("gotThisFar", gotThisFar++);
-
-        // Redirect back to the photography page
-        res.redirect('/photography');
-    } catch (err) {
-        console.error('Error during photo upload:', err);
-        res.status(500).send('An error occurred while uploading the photo.');
-    }
-});
 
 
 
@@ -1801,6 +1751,57 @@ router.post('/:username/:boxName/upload', upload.fields([
     }
 });
 
+router.post('/photography/upload', upload.fields([
+    { name: 'photo', maxCount: 1 } // Only allow one photo at a time
+]), async (req, res) => {
+    let gotThisFar = 0;
+    console.log("gotThisFar", gotThisFar++);
+    try {
+        // Check if the user is an admin
+        if (!req.session.user || !(await TimeToMove.isUserAdmin(req.session.user.username))) {
+            return res.status(403).send('Access denied. Only admins can upload photos.');
+        }
+
+        console.log("gotThisFar", gotThisFar++);
+        // Fetch or create the photography box
+        const photographyBox = await TimeToMove.createOrGetBox('photography');
+        const boxID = photographyBox.BoxID;
+        console.log('Photography Box ID:', boxID);
+
+        console.log("gotThisFar", gotThisFar++);
+        // Handle the uploaded photo
+        const file = req.files.photo ? req.files.photo[0] : null;
+        if (!file) {
+            return res.status(400).send('No file uploaded.');
+        }
+        console.log("Uploaded File:", file);
+
+        console.log("gotThisFar", gotThisFar++);
+        // Construct the media path
+        const mediaPath = path.join('photography', file.originalname);
+
+        // Ensure the upload directory exists
+        const uploadDir = path.join(__dirname, '..', 'uploads', 'photography');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        // Move the file to the correct directory
+        const filePath = path.join(uploadDir, file.originalname);
+        fs.renameSync(file.path, filePath);
+        console.log("File saved at:", filePath);
+
+        // Insert the media into the database
+        await TimeToMove.insertMediaIntoBox(boxID, mediaPath, 'image');
+        console.log("gotThisFar", gotThisFar++);
+
+        // Redirect back to the photography page
+        res.redirect('/photography');
+    } catch (err) {
+        console.error('Error during photo upload:', err);
+        res.status(500).send('An error occurred while uploading the photo.');
+    }
+});
 
 
 
