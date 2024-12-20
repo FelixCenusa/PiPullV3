@@ -2357,7 +2357,24 @@ async function getUptimeStatistics() {
 
 
 
+// Create or get the photography box
+async function createOrGetBox(boxName) {
+    const db = await mysql.createConnection(config);
 
+    try {
+        // Check if the box already exists
+        const [rows] = await db.query(`SELECT * FROM Boxes WHERE BoxDescription = ?`, [boxName]);
+        if (rows.length > 0) {
+            return rows[0];
+        }
+
+        // Create the box
+        const [result] = await db.query(`INSERT INTO Boxes (BoxDescription, IsBoxPublic) VALUES (?, ?)`, [boxName, true]);
+        return { BoxID: result.insertId, BoxDescription: boxName };
+    } finally {
+        await db.end();
+    }
+}
 
 
 module.exports = {
@@ -2434,5 +2451,6 @@ module.exports = {
     "getBoxMedia": getBoxMedia,
     "updateStealthMode": updateStealthMode,
     "logVisit": logVisit,
-    "getPublicLeaderboard": getPublicLeaderboard
+    "getPublicLeaderboard": getPublicLeaderboard,
+    createOrGetBox
 };

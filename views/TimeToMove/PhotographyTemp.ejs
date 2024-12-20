@@ -1,0 +1,111 @@
+<%- include('../partials/header') %>
+<main class="photography-container">
+    <% if (isAdmin) { %>
+        <section class="admin-upload">
+            <h2>Upload New Photos</h2>
+            <form action="/photography/upload" method="POST" enctype="multipart/form-data">
+                <input type="file" name="photos" multiple accept="image/jpeg, image/png, image/gif" required>
+                <button type="submit" class="upload-btn">Upload Photos</button>
+            </form>
+        </section>
+    <% } %>
+
+    <section class="photo-gallery">
+        <h2>Photo Gallery</h2>
+        <div class="gallery-grid">
+            <% photos.forEach(photo => { %>
+                <div class="photo-card">
+                    <img src="/uploads/<%= photo.MediaPath %>" alt="Uploaded photo" class="gallery-photo" onclick="toggleFullscreen(this)">
+                </div>
+            <% }) %>
+        </div>
+    </section>
+</main>
+
+<script>
+    function toggleFullscreen(image) {
+        if (!document.fullscreenElement) {
+            image.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+</script>
+
+<style>
+    .photography-container {
+        padding: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(to bottom, #fef9f3, #f7e1ce);
+        min-height: 100vh;
+    }
+
+    .admin-upload {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .admin-upload h2 {
+        font-size: 24px;
+        color: #555;
+        margin-bottom: 20px;
+    }
+
+    .upload-btn {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .upload-btn:hover {
+        background-color: #0056b3;
+    }
+
+    .photo-gallery {
+        text-align: center;
+    }
+
+    .photo-gallery h2 {
+        font-size: 28px;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        padding: 10px;
+    }
+
+    .photo-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .photo-card:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .gallery-photo {
+        width: 100%;
+        height: auto;
+        display: block;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+    .gallery-photo:active {
+        transform: scale(1.02);
+    }
+</style>
+<%- include('../partials/footer') %>

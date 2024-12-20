@@ -92,6 +92,56 @@ router.get('/statistics', async (req, res) => {
     }
 });
 
+// Photography page route
+router.get('/photography', async (req, res) => {
+    // Record the page view
+    await TimeToMove.recordPageView(req, '/photography');
+
+    // Check admin status
+    let isAdmin = false;
+    if (req.session.user) {
+        isAdmin = await TimeToMove.isUserAdmin(req.session.user.username);
+    }
+
+    // Fetch photography box
+    const photographyBox = await TimeToMove.createOrGetBox('photography');
+
+    // Use the current `getBoxMedia` function to retrieve all media
+    const media = await TimeToMove.getBoxMedia(photographyBox.BoxID);
+
+    // Pass only images to the view
+    const photos = media.images;
+
+    res.render('TimeToMove/PhotographyTemp', {
+        session: req.session,
+        isAdmin,
+        photos
+    });
+});
+
+// Upload photos for photography
+router.post('/photography/upload', upload.array('photos', 10), async (req, res) => {
+    try {
+        if (!req.session.user || !(await TimeToMove.isUserAdmin(req.session.user.username))) {
+            return res.status(403).send('Access denied');
+        }
+
+        const photographyBox = await TimeToMove.createOrGetBox('photography');
+        const boxID = photographyBox.BoxID;
+
+        // Insert each uploaded file into the BoxMedia table
+        for (const file of req.files) {
+            await TimeToMove.insertMediaIntoBox(boxID, path.join('photography', file.filename), 'image');
+        }
+
+        res.redirect('/photography');
+    } catch (err) {
+        console.error('Error uploading photos:', err);
+        res.status(500).send('Error uploading photos');
+    }
+});
+
+
 // make a route for architecture
 router.get('/architecture', async (req, res) => {
     // Record the page view
