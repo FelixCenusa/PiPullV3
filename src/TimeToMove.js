@@ -2363,7 +2363,7 @@ async function createOrGetBox(boxName) {
 
     try {
         // Check if the box already exists
-        const [rows] = await db.query(`SELECT * FROM Boxes WHERE BoxDescription = ?`, [boxName]);
+        const rows = await db.query(`SELECT * FROM Boxes WHERE BoxDescription = ?`, [boxName]);
         if (rows.length > 0) {
             return rows;
         }
