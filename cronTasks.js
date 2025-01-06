@@ -3,7 +3,7 @@ const TimeToMove = require('./src/TimeToMove');
 const { sendEmail } = require('./emailService'); 
 
 // Task runs every day at 7am to check for inactivity
-cron.schedule('0 7 * * *', async () => {
+cron.schedule('0 6 * * *', async () => {
     try {
         const inactiveUsers = await TimeToMove.getInactiveUsers();
         for (const user of inactiveUsers) {
