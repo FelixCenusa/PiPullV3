@@ -2250,12 +2250,7 @@ async function getUptimeStatistics() {
             SELECT
                 MIN(serverStartedAt) AS firstStartTime,
                 TIMESTAMPDIFF(SECOND, MIN(serverStartedAt), NOW()) AS totalTimeSinceFirstStart,
-                SUM(
-                    CASE
-                        WHEN serverStoppedAt IS NOT NULL THEN COALESCE(totalTimeInThisRow, TIMESTAMPDIFF(SECOND, serverStartedAt, serverStoppedAt))
-                        ELSE TIMESTAMPDIFF(SECOND, serverStartedAt, NOW())
-                    END
-                ) AS totalUptime
+                SUM(TIMESTAMPDIFF(SECOND, serverStartedAt, COALESCE(serverStoppedAt, NOW()))) AS totalUptime
             FROM systemUptimeDetails
         `);
         const firstStartTime = summaryResult[0].firstStartTime;
