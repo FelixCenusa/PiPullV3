@@ -2275,12 +2275,12 @@ async function getUptimeStatistics() {
         const totalUptime = Number(summaryResult[0].totalUptime) || 0;
         const uptimePercentage = Math.min((totalUptime / totalTimeSinceFirstStart) * 100, 100);
 
-        // Only fetch recent 500 records for the history table
+        // Only fetch recent 50 records for the history table
         const recentRecords = await db.query(`
             SELECT id, serverStartedAt, serverStoppedAt, totalTimeInThisRow
             FROM systemUptimeDetails
             ORDER BY serverStartedAt DESC
-            LIMIT 500
+            LIMIT 50
         `);
         recentRecords.reverse();
 
