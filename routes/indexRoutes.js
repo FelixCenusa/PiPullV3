@@ -1567,7 +1567,7 @@ if (!isNaN(boxName)) {
     // boxName is a string, treat it as a boxName
     //console.log("boxName is a string (boxName)");
     boxID = await TimeToMove.getBoxID(username, boxName);  // Fetch the box by boxName
-    boxID = boxID[0].BoxID;
+    boxID = boxID && boxID[0] ? boxID[0].BoxID : null;
 }
     //console.log('boxID in usrname "boxname" upload:', boxID);
     if (!boxID) {

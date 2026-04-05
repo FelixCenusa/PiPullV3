@@ -674,20 +674,12 @@ async function getBoxByIDONLY(boxID) {
 
 
 async function getBoxID(username, boxName){
-    const userID = await getUserByUsername(username);
     const db = await mysql.createConnection(config);
     try {
-        //console.log("GetBoxID username:", username);
+        const userID = await getUserByUsername(username);
+        if (!userID) return null; // User not found
         const sql = `SELECT BoxID FROM Boxes WHERE UserID = ? AND TitleChosen = ?`;
-        //console.log("GetBoxID username:", username);
-        //console.log("boxName:", boxName);
-        //console.log("UserID:", userID);
-        //console.log("LabelChiosen:", boxName);
-
-        
         const boxID = await db.query(sql, [userID.ID, boxName]);
-        //console.log("BoxID:", boxID);
-        //console.log("GetBoxID result:", boxID);
         return boxID;
     } catch (error) {
         console.error('Error fetching box ID:', error);
@@ -2119,11 +2111,12 @@ async function getInactiveUsers() {
 async function isUserDisabled(username) {
     const db = await mysql.createConnection(config);
     try {
-        const sql = `SELECT isDisabled FROM Users WHERE Username = ?`;
-        const result = await db.query(sql, [username]);
+        const sql = `SELECT isDisabled FROM Users WHERE LOWER(Username) = ?`;
+        const result = await db.query(sql, [username.trim().toLowerCase()]);
 
         
 
+        if (!result[0]) return false; // User not found
         return result[0].isDisabled;
     } catch (error) {
         console.error('Error checking if user is disabled:', error);
@@ -2252,14 +2245,22 @@ async function updateServerLastAlive() {
 async function getUptimeStatistics() {
     const db = await mysql.createConnection(config);
     try {
-        // Get the earliest start time
-        const totalTimeSinceFirstStartResult = await db.query(`
-            SELECT MIN(serverStartedAt) AS firstStartTime FROM systemUptimeDetails
+        // Get summary stats efficiently via SQL, using consistent MySQL clock
+        const summaryResult = await db.query(`
+            SELECT
+                MIN(serverStartedAt) AS firstStartTime,
+                TIMESTAMPDIFF(SECOND, MIN(serverStartedAt), NOW()) AS totalTimeSinceFirstStart,
+                SUM(
+                    CASE
+                        WHEN serverStoppedAt IS NOT NULL THEN COALESCE(totalTimeInThisRow, TIMESTAMPDIFF(SECOND, serverStartedAt, serverStoppedAt))
+                        ELSE TIMESTAMPDIFF(SECOND, serverStartedAt, NOW())
+                    END
+                ) AS totalUptime
+            FROM systemUptimeDetails
         `);
-        const firstStartTime = totalTimeSinceFirstStartResult[0].firstStartTime;
+        const firstStartTime = summaryResult[0].firstStartTime;
 
         if (!firstStartTime) {
-            // No uptime records
             return {
                 totalUptime: 0,
                 totalTimeSinceFirstStart: 0,
@@ -2270,29 +2271,29 @@ async function getUptimeStatistics() {
             };
         }
 
-        // Total time since first start
-        const totalTimeSinceFirstStart = (new Date() - new Date(firstStartTime)) / 1000;
+        const totalTimeSinceFirstStart = Number(summaryResult[0].totalTimeSinceFirstStart) || 1;
+        const totalUptime = Number(summaryResult[0].totalUptime) || 0;
+        const uptimePercentage = Math.min((totalUptime / totalTimeSinceFirstStart) * 100, 100);
 
-        // Get all records ordered by serverStartedAt
-        const allRecords = await db.query(`
+        // Only fetch recent 500 records for the history table
+        const recentRecords = await db.query(`
             SELECT id, serverStartedAt, serverStoppedAt, totalTimeInThisRow
             FROM systemUptimeDetails
-            ORDER BY serverStartedAt ASC
+            ORDER BY serverStartedAt DESC
+            LIMIT 500
         `);
+        recentRecords.reverse();
 
-        let totalUptime = 0;
         let uptimeDowntimePeriods = [];
         let lastStopTime = null;
 
-        for (let i = 0; i < allRecords.length; i++) {
-            const record = allRecords[i];
+        for (let i = 0; i < recentRecords.length; i++) {
+            const record = recentRecords[i];
 
-            // Downtime period between last stop and current start
             if (lastStopTime && (new Date(record.serverStartedAt) > new Date(lastStopTime))) {
                 const downtimeStart = new Date(lastStopTime);
                 const downtimeEnd = new Date(record.serverStartedAt);
                 const downtimeDuration = (downtimeEnd - downtimeStart) / 1000;
-
                 uptimeDowntimePeriods.push({
                     type: 'downtime',
                     startTime: downtimeStart,
@@ -2301,12 +2302,9 @@ async function getUptimeStatistics() {
                 });
             }
 
-            // Uptime period
             const uptimeStart = new Date(record.serverStartedAt);
             const uptimeEnd = record.serverStoppedAt ? new Date(record.serverStoppedAt) : new Date();
             const uptimeDuration = (uptimeEnd - uptimeStart) / 1000;
-            totalUptime += uptimeDuration;
-
             uptimeDowntimePeriods.push({
                 type: 'uptime',
                 startTime: uptimeStart,
@@ -2316,9 +2314,6 @@ async function getUptimeStatistics() {
 
             lastStopTime = record.serverStoppedAt ? record.serverStoppedAt : null;
         }
-
-        // Uptime percentage
-        const uptimePercentage = (totalUptime / totalTimeSinceFirstStart) * 100;
 
         // Last downtime duration
         let lastDowntime = 0;
