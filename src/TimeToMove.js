@@ -2245,13 +2245,20 @@ async function updateServerLastAlive() {
 async function getUptimeStatistics() {
     const db = await mysql.createConnection(config);
     try {
-        // Get summary stats efficiently via SQL, using consistent MySQL clock
+        // Get summary stats via SQL. Uptime = total time minus real downtime gaps (>30s).
+        // Gaps under 30s are graceful PM2 reloads (zero-downtime), not actual outages.
         const summaryResult = await db.query(`
             SELECT
-                MIN(serverStartedAt) AS firstStartTime,
-                TIMESTAMPDIFF(SECOND, MIN(serverStartedAt), NOW()) AS totalTimeSinceFirstStart,
-                SUM(TIMESTAMPDIFF(SECOND, serverStartedAt, COALESCE(serverStoppedAt, NOW()))) AS totalUptime
-            FROM systemUptimeDetails
+                MIN(sub.serverStartedAt) AS firstStartTime,
+                TIMESTAMPDIFF(SECOND, MIN(sub.serverStartedAt), NOW()) AS totalTimeSinceFirstStart,
+                TIMESTAMPDIFF(SECOND, MIN(sub.serverStartedAt), NOW()) - COALESCE((
+                    SELECT SUM(TIMESTAMPDIFF(SECOND, a.serverStoppedAt, b.serverStartedAt))
+                    FROM systemUptimeDetails a
+                    JOIN systemUptimeDetails b ON b.id = a.id + 1
+                    WHERE a.serverStoppedAt IS NOT NULL
+                      AND TIMESTAMPDIFF(SECOND, a.serverStoppedAt, b.serverStartedAt) > 30
+                ), 0) AS totalUptime
+            FROM systemUptimeDetails sub
         `);
         const firstStartTime = summaryResult[0].firstStartTime;
 
@@ -2289,12 +2296,15 @@ async function getUptimeStatistics() {
                 const downtimeStart = new Date(lastStopTime);
                 const downtimeEnd = new Date(record.serverStartedAt);
                 const downtimeDuration = (downtimeEnd - downtimeStart) / 1000;
-                uptimeDowntimePeriods.push({
-                    type: 'downtime',
-                    startTime: downtimeStart,
-                    endTime: downtimeEnd,
-                    duration: downtimeDuration
-                });
+                // Only show real downtime (>30s), not graceful PM2 reloads
+                if (downtimeDuration > 30) {
+                    uptimeDowntimePeriods.push({
+                        type: 'downtime',
+                        startTime: downtimeStart,
+                        endTime: downtimeEnd,
+                        duration: downtimeDuration
+                    });
+                }
             }
 
             const uptimeStart = new Date(record.serverStartedAt);
