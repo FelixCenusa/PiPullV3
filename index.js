@@ -74,6 +74,31 @@ app.use((req, res, next) =>{
 
 app.use(indexRoutes);
 
+// 404 fallback for any request that didn't match a route above.
+app.use((req, res) => {
+    res.status(404).send('Not found');
+});
+
+// Global Express error handler. Catches errors forwarded via next(err) and
+// sync throws from middleware, so a single buggy request returns 500 instead
+// of hanging cloudflared until it times out.
+app.use((err, req, res, next) => {
+    console.error(`[express-error] ${req.method} ${req.originalUrl}:`, err && err.stack ? err.stack : err);
+    if (!res.headersSent) {
+        res.status(500).send('Internal server error');
+    }
+});
+
+// Process-level safety net: log and keep running. We deliberately do NOT exit,
+// because under adversarial bot traffic a crash-on-error policy would put pm2
+// into a restart loop and take the site down harder than the original bug.
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[unhandledRejection]', reason && reason.stack ? reason.stack : reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('[uncaughtException]', err && err.stack ? err.stack : err);
+});
+
 app.listen(port, () =>{
     console.log(`Server is listening on port: ${port}`);
 });

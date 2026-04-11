@@ -1545,44 +1545,34 @@ function readFilePromise(filePath) {
 
 router.get('/:username/:boxName', async (req, res) => {
     const { username, boxName } = req.params;
-    //console.log("username:", username);
-    //console.log("boxName:", boxName);
-    //console.log("Session user:", req.session.user);
 
-    await TimeToMove.recordPageView(req, `${username}${boxName}`);
-    // Retrieve the view counts
-    const viewCounts = await TimeToMove.getPageViewCounts(`${username}${boxName}`);
-    // Render the page and pass the view counts
-    // async         viewCounts
-    // if boxName is a number, it's a boxID
-    // if boxName is a string, it's a boxName
-    // Check if boxName is a number (indicating it's a boxID)
-let boxID;
-if (!isNaN(boxName)) {
-    // boxName is a number, treat it as a boxID
-    console.log("boxName is a number (boxID)");
-    //boxID = await TimeToMove.getBoxByID(boxName);  // Fetch the box by boxID
-    boxID = boxName;
-} else {
-    // boxName is a string, treat it as a boxName
-    //console.log("boxName is a string (boxName)");
-    boxID = await TimeToMove.getBoxID(username, boxName);  // Fetch the box by boxName
-    boxID = boxID && boxID[0] ? boxID[0].BoxID : null;
-}
-    //console.log('boxID in usrname "boxname" upload:', boxID);
-    if (!boxID) {
-        return res.render('TimeToMove/boxContents', {
-            errorMessage: 'Box not found',
-            user,
-            box: null, 
-            contents: [],
-            session: req.session
-        });
+    // Reject obvious bot-scanner probes (e.g. /backend/.env, /core/.env) before any DB work.
+    if (
+        typeof username !== 'string' || typeof boxName !== 'string' ||
+        username.length === 0 || boxName.length === 0 ||
+        username.startsWith('.') || boxName.startsWith('.') ||
+        username.includes('..') || boxName.includes('..') ||
+        username.includes('/') || boxName.includes('/')
+    ) {
+        return res.status(404).send('Not found');
     }
-    //console.log("BOX ID HEREEEE", boxID);
 
     try {
-        //console.log("Sanity check")
+        await TimeToMove.recordPageView(req, `${username}${boxName}`);
+        const viewCounts = await TimeToMove.getPageViewCounts(`${username}${boxName}`);
+
+        let boxID;
+        if (!isNaN(boxName)) {
+            boxID = boxName;
+        } else {
+            const boxIDResult = await TimeToMove.getBoxID(username, boxName);
+            boxID = boxIDResult && boxIDResult[0] ? boxIDResult[0].BoxID : null;
+        }
+
+        if (!boxID) {
+            return res.status(404).send('Box not found');
+        }
+
         const user = await TimeToMove.getUserByUsername(username);
         //console.log("Lets log if the session user is the owner of the box", req.params.username, " AGAIN ",user.Username);
         //console.log("STRAIGHT UPPP", user, " AGAIN ",username);
@@ -1640,7 +1630,9 @@ if (!isNaN(boxName)) {
         }
     } catch (error) {
         console.error('Error loading box contents:', error);
-        res.status(500).send('Error loading box contents.');
+        if (!res.headersSent) {
+            res.status(500).send('Error loading box contents.');
+        }
     }
 });
 
