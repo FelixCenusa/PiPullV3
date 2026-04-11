@@ -1,0 +1,27 @@
+# Low-memory tuning overrides for MariaDB on a 1.8GB Raspberry Pi.
+#
+# Installed at /etc/mysql/mariadb.conf.d/99-lowmem.cnf on the Pi
+# (the `99-` prefix ensures it wins over stock config files).
+#
+# Background: mariadbd had been OOM-killed at least 5 times between
+# Mar 25 and Apr 04 2026, reaching ~1.5GB anon-rss each time. With only
+# 1.8GB total RAM and a single Node app using the DB, the stock config is
+# far too generous. These three caps trim the worst offenders without
+# touching the InnoDB buffer pool (already at 128M, which is fine for the
+# TimeToMove dataset).
+
+[mysqld]
+
+# MyISAM key cache. TimeToMove uses InnoDB, so the stock 128M here is
+# pure waste. 16M leaves headroom for any MyISAM system table.
+key_buffer_size = 16M
+
+# Cap connections. Stock is 151 and each connection reserves per-thread
+# buffers. v3Time is a single Node process with a small pool; 30 gives
+# comfortable headroom for the app plus occasional admin/backup sessions
+# without letting total thread memory grow unbounded.
+max_connections = 30
+
+# Don't cache more idle threads than we'll realistically reuse.
+# Stock is 151 (same as max_connections); 8 is plenty.
+thread_cache_size = 8

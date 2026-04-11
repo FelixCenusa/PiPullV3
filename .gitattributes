@@ -1,0 +1,5 @@
+# Force LF line endings for files that run on the Pi.
+# Without this, a clone on Windows (CRLF autocrlf) would break shell
+# scripts executed on Linux with "/bin/bash^M: bad interpreter".
+*.sh  text eol=lf
+*.cnf text eol=lf
