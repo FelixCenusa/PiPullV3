@@ -17,10 +17,13 @@
 key_buffer_size = 16M
 
 # Cap connections. Stock is 151 and each connection reserves per-thread
-# buffers. v3Time is a single Node process with a small pool; 30 gives
-# comfortable headroom for the app plus occasional admin/backup sessions
-# without letting total thread memory grow unbounded.
-max_connections = 30
+# buffers. Raised from 30 -> 60 on 2026-04-17 after a scanner burst
+# exhausted the 30-connection cap and took the site down for ~5min
+# (the app opens a fresh connection per request -- no pool). 60 keeps
+# worst-case per-thread memory around ~720MB, still well below the
+# 1.5GB anon-rss that used to trigger OOM kills. The real fix is an
+# app-side pool; this cap is just headroom until that lands.
+max_connections = 60
 
 # Don't cache more idle threads than we'll realistically reuse.
 # Stock is 151 (same as max_connections); 8 is plenty.

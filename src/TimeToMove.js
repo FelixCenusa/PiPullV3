@@ -1,5 +1,8 @@
 "use strict";
-const mysql = require("promise-mysql");
+// Pool-backed shim: `mysql.createConnection(config)` checks out a pooled
+// connection and `db.end()` releases it back. Prevents scanner bursts from
+// exhausting MariaDB's max_connections cap. See config/db/pool.js.
+const mysql = require("../config/db/pool.js");
 const axios = require('axios');
 const config = require("../config/db/TimeToMove.js");
 const bcrypt = require('bcryptjs');
