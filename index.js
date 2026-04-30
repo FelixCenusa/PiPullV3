@@ -135,17 +135,24 @@ app.set("view engine", "ejs");
 // that any browser pulls without the user clicking. 60/min is tight enough
 // to catch burst scanners (today's 30-paths-in-3sec sweep would have tripped
 // after ~6 hits) and loose enough that a normal browsing session never sees
-// a 429. CF-Connecting-IP keys on the real client IP; falls back to req.ip
-// (resolved from XFF via the `trust proxy` setting above).
+// a 429.
 //
-// Earlier two-tier design (10/min on single-segment) was rejected because it
-// would throttle legitimate /felix-style profile reloads.
+// No custom keyGenerator: the default uses `req.ip` (resolved from XFF via
+// the `trust proxy: loopback` setting above, which cloudflared sets) and
+// normalizes IPv6 to a /64 prefix to prevent /128 rotation bypass. An
+// earlier version preferred CF-Connecting-IP, but on express-rate-limit v8
+// that triggered ERR_ERL_KEY_GEN_IPV6 (custom keyGenerators must call the
+// ipKeyGenerator helper for v6 normalization). cf-connecting-ip and XFF
+// carry the same value when the only ingress is cloudflared, so the
+// default is correct.
+//
+// Earlier two-tier design (10/min on single-segment paths) was rejected
+// because it would throttle legitimate /felix-style profile reloads.
 app.use(rateLimit({
     windowMs: 60 * 1000,
     limit: 60,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
-    keyGenerator: (req) => req.headers['cf-connecting-ip'] || req.ip,
     skip: (req) => /^\/(?:favicon\.ico|robots\.txt|sitemap\.xml|static\/|assets\/|uploads\/)/.test(req.path),
     handler: (req, res) => {
         res.status(429).send('Too many requests, slow down.');
