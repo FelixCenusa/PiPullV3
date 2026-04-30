@@ -3,3 +3,17 @@
 # scripts executed on Linux with "/bin/bash^M: bad interpreter".
 *.sh  text eol=lf
 *.cnf text eol=lf
+
+# Don't touch line endings inside node_modules. The directory is currently
+# tracked (legacy -- not in .gitignore at the time files were committed) and
+# most files were committed with LF endings. On Windows checkouts git would
+# nag "LF will be replaced by CRLF" against thousands of files in
+# `git status`. Treating them as binary stops the noise without requiring a
+# node_modules purge (which would force a re-`npm install` on the Pi at
+# every pull).
+node_modules/** -text
+
+# Lockfiles and bundled assets -- keep stable, don't normalize.
+package-lock.json -text
+*.min.js  -text
+*.min.css -text

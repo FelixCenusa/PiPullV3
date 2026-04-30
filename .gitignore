@@ -1,17 +1,12 @@
 .env
-# /uploads/*
-# !uploads/profiles
-# !uploads/labelStyles
-# /uploads/profiles/*
-# /uploads/labelStyles/*
-# !uploads/profiles/*.svg
-# /node_modules
-uploads/
-# /package.json
-# /package-lock.json
-# package.json
-# package-lock.json
 
-# !uploads/profiles/*.jpg
-# !uploads/profiles/*.png
-# !uploads/profiles/*.svg
+# Uploads are user content -- written at runtime, never in the repo.
+uploads/
+
+# Don't track new dependencies. Note: node_modules/ files committed BEFORE
+# this rule existed are still tracked (legacy). Don't `git rm --cached`
+# them; the Pi's update script does `git reset --hard && git pull` which
+# would clobber the Pi's installed packages on the next pull and break
+# v3Time. Live with the legacy tracking; the .gitattributes file silences
+# the line-ending noise these legacy files produce in `git status`.
+node_modules/
