@@ -13,6 +13,26 @@ const axios = require('axios');
 const PDFDocument = require('pdfkit');
 const { marked } = require('marked');
 
+// Route-param validators. Run BEFORE the handler body so scanner traffic
+// hitting /:username with garbage like `.env.production` or `wp-config.php`
+// short-circuits to 404 without ever touching the DB. Keeps the same regex
+// the registration form enforces (views/TimeToMove/register.ejs:49) plus a
+// length cap. The 2026-04-30 outage was caused by every scanner hit running
+// `getUserByUsername` + `getBoxID`; with this in place those queries are
+// never reached.
+//
+// boxName is intentionally NOT strictly validated here -- the per-route
+// hardening in /:username/:boxName (line 1546 onwards) already rejects
+// dot-prefixed and traversal patterns, and existing user-created box names
+// can contain spaces / unicode that a tighter regex would silently 404.
+const usernameRegex = /^[a-zA-Z0-9_é]{1,64}$/;
+router.param('username', (req, res, next, username) => {
+    if (!usernameRegex.test(username)) {
+        return res.status(404).send('Not found');
+    }
+    next();
+});
+
 // Middleware to check if the user is an admin by querying the database
 async function isAdmin(req, res, next) {
     if (!req.session.user) {

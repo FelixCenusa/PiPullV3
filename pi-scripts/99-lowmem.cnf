@@ -1,30 +1,96 @@
-# Low-memory tuning overrides for MariaDB on a 1.8GB Raspberry Pi.
+# Low-memory tuning overrides for MariaDB on a 1.8 GB Raspberry Pi.
 #
 # Installed at /etc/mysql/mariadb.conf.d/99-lowmem.cnf on the Pi
 # (the `99-` prefix ensures it wins over stock config files).
 #
-# Background: mariadbd had been OOM-killed at least 5 times between
-# Mar 25 and Apr 04 2026, reaching ~1.5GB anon-rss each time. With only
-# 1.8GB total RAM and a single Node app using the DB, the stock config is
-# far too generous. These three caps trim the worst offenders without
-# touching the InnoDB buffer pool (already at 128M, which is fine for the
-# TimeToMove dataset).
+# Background: this file went through three iterations.
+#
+# v1 (early Apr 2026): trimmed key_buffer_size, max_connections, thread_cache.
+# v2 (2026-04-17): bumped max_connections 30 -> 60 to survive a scanner burst.
+# v3 (2026-04-30, this version): triple-LLM review + live measurement showed
+#   the v1 comment "InnoDB buffer pool already at 128M, which is fine" was
+#   correct -- but mariadbd RSS still climbed to 956 MB on a 1.8 GB host. The
+#   buffer pool is NOT the dominant offender. The real costs are:
+#     - Aria pagecache (default 128M, basically wasted on InnoDB tables)
+#     - per-connection buffers x 60 connections (sort/read/join buffers
+#       reserved per thread regardless of use)
+#     - default tmp_table size (16M) x active threads
+#   With the app-side pool now in place (config/db/pool.js, connectionLimit
+#   12), MariaDB never needs more than ~14 connections, so we can drop
+#   max_connections back to 30 and get a 2x reduction in per-thread overhead.
 
 [mysqld]
 
-# MyISAM key cache. TimeToMove uses InnoDB, so the stock 128M here is
-# pure waste. 16M leaves headroom for any MyISAM system table.
+# === InnoDB ===
+
+# 96M is plenty for the entire TimeToMove dataset (live measurement: 34 MB
+# total across all tables, top table is `Views` at 30 MB). 128M default was
+# fine but 96M leaves more headroom for the app and OS without thrash risk.
+innodb_buffer_pool_size = 96M
+innodb_buffer_pool_instances = 1
+
+# Default 96M log file is overkill for the write rate. 32M is auto-resized
+# safely on MariaDB 10.5+ (we're on 10.11.6); on older versions this would
+# require deleting ib_logfile0/1 manually.
+innodb_log_file_size = 32M
+
+# Default 16M is fine; halving for a small write rate.
+innodb_log_buffer_size = 8M
+
+# === Aria pagecache (the big surprise in 2026-04-30 measurement) ===
+# Default is 128M. Aria backs MariaDB system tables and any explicitly Aria
+# tables -- TimeToMove uses InnoDB everywhere, so this is essentially
+# allocated for nothing. 16M leaves enough for the system metadata.
+aria_pagecache_buffer_size = 16M
+
+# === MyISAM (we don't use it -- minimize) ===
+# Stock 128M is pure waste; 16M leaves headroom for any MyISAM system table.
 key_buffer_size = 16M
 
-# Cap connections. Stock is 151 and each connection reserves per-thread
-# buffers. Raised from 30 -> 60 on 2026-04-17 after a scanner burst
-# exhausted the 30-connection cap and took the site down for ~5min
-# (the app opens a fresh connection per request -- no pool). 60 keeps
-# worst-case per-thread memory around ~720MB, still well below the
-# 1.5GB anon-rss that used to trigger OOM kills. The real fix is an
-# app-side pool; this cap is just headroom until that lands.
-max_connections = 60
+# === Connections ===
+
+# Down from 60 -> 30 on 2026-04-30 because the app now uses an app-side pool
+# with connectionLimit=12 (config/db/pool.js). 30 leaves admin/backup
+# headroom (12 app + 18 admin = plenty). Per-thread buffers (sort/read/join)
+# are reserved per CONNECTION, not per query, so this directly halves the
+# headroom-RSS cost.
+max_connections = 30
 
 # Don't cache more idle threads than we'll realistically reuse.
-# Stock is 151 (same as max_connections); 8 is plenty.
 thread_cache_size = 8
+
+# Smaller stack per thread (default 256K). At 30 connections this is 1.9 MB
+# saved -- small but free.
+thread_stack = 192K
+
+# === Per-connection buffers (multiply by max_connections to estimate worst
+# case). Defaults are tuned for a beefy server doing complex reporting; on
+# this Pi we run small targeted queries, so dial these down.
+
+# Default 4M; 256K is fine for the SELECTs this app issues.
+read_buffer_size = 256K
+read_rnd_buffer_size = 256K
+
+# Default 2M; 1M is enough for the ORDER BY / GROUP BY clauses we have.
+sort_buffer_size = 1M
+
+# Default 2M; we don't use joins big enough to need more.
+join_buffer_size = 1M
+
+# === Internal temporary tables ===
+
+# When MariaDB has to spill an in-memory tmp table to disk, it switches to
+# Aria. Capping size + heap_table_size keeps memory bounded.
+tmp_table_size = 16M
+max_heap_table_size = 16M
+
+# === Misc ===
+
+# Don't cache full table metadata for tables we never touch.
+table_open_cache = 64
+table_definition_cache = 64
+
+# Performance schema is already OFF on this host (verified 2026-04-30); not
+# setting it here keeps the global default in case it's flipped via systemd
+# override later. If you need it on for diagnosis: set "performance_schema = ON"
+# but also tune down the *_max_* sizes -- the default footprint is ~80 MB.
